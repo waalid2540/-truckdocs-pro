@@ -1,0 +1,201 @@
+/**
+ * DIGITAL SIGNATURE PAD ROUTE
+ *
+ * Generate PDF documents with digital signatures
+ * Features:
+ * - Create branded PDF with company header
+ * - Embed signature image into PDF
+ * - Include driver information
+ * - Export as downloadable PDF file
+ *
+ * Uses PDFKit for PDF generation
+ */
+
+const express = require('express');
+const PDFDocument = require('pdfkit');
+const router = express.Router();
+
+/**
+ * POST /api/signature/generate-pdf
+ * Generate a signed PDF document
+ *
+ * Body:
+ * - documentType: Type of document (inspection, log, report, etc.)
+ * - documentContent: Text content of the document
+ * - signatureData: Base64 encoded signature image
+ * - driverInfo: Driver name, truck number, company, date
+ */
+router.post('/generate-pdf', async (req, res) => {
+    try {
+        const {
+            documentType = 'Document',
+            documentContent = '',
+            signatureData = null,
+            driverInfo = {}
+        } = req.body;
+
+        if (!documentContent) {
+            return res.status(400).json({
+                error: 'Document content is required'
+            });
+        }
+
+        // Create a new PDF document
+        const doc = new PDFDocument({
+            size: 'LETTER',
+            margins: {
+                top: 50,
+                bottom: 50,
+                left: 50,
+                right: 50
+            }
+        });
+
+        // Set response headers for PDF download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${documentType.replace(/\s+/g, '-')}-${Date.now()}.pdf"`
+        );
+
+        // Pipe the PDF to the response
+        doc.pipe(res);
+
+        // ----- HEADER SECTION -----
+        doc.fontSize(24)
+            .fillColor('#1e40af') // Blue-900 color
+            .text('TruckDocs Pro', 50, 50);
+
+        doc.fontSize(10)
+            .fillColor('#6b7280') // Gray-600
+            .text('Professional Document Management for Truck Drivers', 50, 80);
+
+        // Draw header line
+        doc.moveTo(50, 95)
+            .lineTo(562, 95)
+            .strokeColor('#1e40af')
+            .lineWidth(2)
+            .stroke();
+
+        // ----- DOCUMENT INFO SECTION -----
+        doc.fontSize(18)
+            .fillColor('#111827') // Gray-900
+            .text(documentType, 50, 115);
+
+        let yPosition = 145;
+
+        // Driver information
+        if (driverInfo.driverName) {
+            doc.fontSize(10)
+                .fillColor('#374151')
+                .text(`Driver: ${driverInfo.driverName}`, 50, yPosition);
+            yPosition += 15;
+        }
+
+        if (driverInfo.truckNumber) {
+            doc.text(`Truck #: ${driverInfo.truckNumber}`, 50, yPosition);
+            yPosition += 15;
+        }
+
+        if (driverInfo.companyName) {
+            doc.text(`Company: ${driverInfo.companyName}`, 50, yPosition);
+            yPosition += 15;
+        }
+
+        if (driverInfo.date) {
+            doc.text(`Date: ${driverInfo.date}`, 50, yPosition);
+            yPosition += 15;
+        }
+
+        yPosition += 10;
+
+        // ----- DOCUMENT CONTENT SECTION -----
+        doc.fontSize(11)
+            .fillColor('#111827')
+            .text(documentContent, 50, yPosition, {
+                width: 512,
+                align: 'left',
+                lineGap: 5
+            });
+
+        // Calculate position for signature (bottom of content + spacing)
+        const contentHeight = doc.heightOfString(documentContent, {
+            width: 512,
+            lineGap: 5
+        });
+
+        yPosition += contentHeight + 30;
+
+        // ----- SIGNATURE SECTION -----
+        if (signatureData) {
+            // Draw signature box
+            doc.rect(50, yPosition, 250, 80)
+                .strokeColor('#d1d5db')
+                .lineWidth(1)
+                .stroke();
+
+            // Add signature label
+            doc.fontSize(9)
+                .fillColor('#6b7280')
+                .text('Digital Signature:', 50, yPosition - 15);
+
+            try {
+                // Convert base64 signature to buffer and embed in PDF
+                const signatureBuffer = Buffer.from(
+                    signatureData.replace(/^data:image\/\w+;base64,/, ''),
+                    'base64'
+                );
+
+                doc.image(signatureBuffer, 55, yPosition + 5, {
+                    fit: [240, 70],
+                    align: 'center',
+                    valign: 'center'
+                });
+            } catch (error) {
+                console.error('Failed to embed signature:', error);
+                doc.fontSize(10)
+                    .fillColor('#ef4444')
+                    .text('(Signature Error)', 55, yPosition + 30);
+            }
+
+            yPosition += 95;
+        }
+
+        // ----- FOOTER SECTION -----
+        doc.fontSize(8)
+            .fillColor('#9ca3af')
+            .text(
+                `Generated by TruckDocs Pro on ${new Date().toLocaleString()}`,
+                50,
+                yPosition + 20,
+                { align: 'center', width: 512 }
+            );
+
+        // Finalize the PDF
+        doc.end();
+
+    } catch (error) {
+        console.error('PDF generation error:', error);
+
+        // If headers not sent yet, send error response
+        if (!res.headersSent) {
+            res.status(500).json({
+                error: 'Failed to generate PDF',
+                message: error.message
+            });
+        }
+    }
+});
+
+/**
+ * POST /api/signature/test
+ * Test endpoint to verify signature API is working
+ */
+router.post('/test', (req, res) => {
+    res.json({
+        message: 'Signature Pad API is ready',
+        pdfkitVersion: require('pdfkit/package.json').version
+    });
+});
+
+module.exports = router;
