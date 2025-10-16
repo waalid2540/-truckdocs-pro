@@ -33,14 +33,29 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-// Use demo auth (no database needed)
-app.use('/api/auth', require('./routes/auth-demo'));
-// app.use('/api/documents', require('./routes/documents'));
-// app.use('/api/invoices', require('./routes/invoices'));
-// app.use('/api/expenses', require('./routes/expenses'));
-// app.use('/api/ifta', require('./routes/ifta'));
-// app.use('/api/subscription', require('./routes/subscription'));
-app.use('/api/user', require('./routes/user-demo'));
+// Check if we have DATABASE_URL to determine production vs demo mode
+const isProduction = process.env.DATABASE_URL && process.env.DATABASE_URL !== 'postgresql://username:password@host:port/database';
+
+if (isProduction) {
+    console.log('🗄️  Production mode: Using database');
+    app.use('/api/auth', require('./routes/auth'));
+    app.use('/api/documents', require('./routes/documents'));
+    app.use('/api/invoices', require('./routes/invoices'));
+    app.use('/api/expenses', require('./routes/expenses'));
+    app.use('/api/ifta', require('./routes/ifta'));
+    app.use('/api/subscription', require('./routes/subscription'));
+    app.use('/api/user', require('./routes/user'));
+} else {
+    console.log('🧪 Demo mode: Using in-memory storage (no database)');
+    app.use('/api/auth', require('./routes/auth-demo'));
+    app.use('/api/user', require('./routes/user-demo'));
+}
+
+// These routes work in both modes
+app.use('/api/ai', require('./routes/ai-assistant'));
+app.use('/api/ocr', require('./routes/ocr-scanner'));
+app.use('/api/signature', require('./routes/signature-pad'));
+app.use('/api/reminders', require('./routes/reminders'));
 
 // Welcome route
 app.get('/', (req, res) => {
