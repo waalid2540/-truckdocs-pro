@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import axios from '../api/axios'
 import { Truck, FileText, DollarSign, Fuel, TrendingUp, Receipt, Bell, AlertCircle, Calendar, CheckCircle } from 'lucide-react'
 import Layout from '../components/Layout'
 import { Link } from 'react-router-dom'

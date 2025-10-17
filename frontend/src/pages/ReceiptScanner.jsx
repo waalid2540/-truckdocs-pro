@@ -12,7 +12,7 @@
 import { useState, useRef } from 'react'
 import { Camera, Upload, Scan, CheckCircle, AlertCircle, DollarSign, Calendar, Building, Tag } from 'lucide-react'
 import Layout from '../components/Layout'
-import axios from 'axios'
+import axios from '../api/axios'
 
 export default function ReceiptScanner() {
   const [selectedImage, setSelectedImage] = useState(null)

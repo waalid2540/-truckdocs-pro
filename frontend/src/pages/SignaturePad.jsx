@@ -12,7 +12,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { PenTool, Download, Trash2, FileText, Calendar, User, Truck, Building } from 'lucide-react'
 import Layout from '../components/Layout'
-import axios from 'axios'
+import axios from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 
 export default function SignaturePad() {

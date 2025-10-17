@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react'
-import axios from 'axios'
+import axios from '../api/axios'
 
 const AuthContext = createContext(null)
 
@@ -7,15 +7,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Configure axios defaults
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001'
-  axios.defaults.baseURL = API_URL
-
   useEffect(() => {
     // Check if user is logged in on mount
     const token = localStorage.getItem('token')
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       fetchUser()
     } else {
       setLoading(false)
@@ -40,7 +35,6 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data
 
       localStorage.setItem('token', token)
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(user)
 
       return { success: true }
@@ -58,7 +52,6 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data
 
       localStorage.setItem('token', token)
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(user)
 
       return { success: true }
@@ -72,7 +65,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token')
-    delete axios.defaults.headers.common['Authorization']
+    localStorage.removeItem('user')
     setUser(null)
   }
 

@@ -12,7 +12,7 @@
 import { useState, useEffect } from 'react'
 import { Sparkles, Mic, MicOff, Download, Copy, FileText } from 'lucide-react'
 import Layout from '../components/Layout'
-import axios from 'axios'
+import axios from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 
 export default function AIAssistant() {
