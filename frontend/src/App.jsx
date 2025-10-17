@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import axios from '../api/axios'
+import axios from './api/axios'
 
 // Import pages
 import Login from './pages/Login'
