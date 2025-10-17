@@ -1,3 +1,7 @@
+/**
+ * Axios instance with centralized configuration
+ * Reads API URL from VITE_API_URL environment variable
+ */
 import axios from 'axios'
 
 // Get API URL from environment variable or use default
