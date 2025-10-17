@@ -51,13 +51,16 @@ if (isProduction) {
     app.use('/api/user', require('./routes/user-demo'));
 }
 
+// Migration route (only for initial setup) - MUST be before other routes
+app.use('/', require('./routes/migrate'));
+
 // These routes work in both modes
 app.use('/api/ai', require('./routes/ai-assistant'));
 app.use('/api/ocr', require('./routes/ocr-scanner'));
 app.use('/api/signature', require('./routes/signature-pad'));
 app.use('/api/reminders', require('./routes/reminders'));
 
-// Welcome route
+// Welcome route - MUST be after all other routes
 app.get('/', (req, res) => {
     res.json({
         message: 'TruckDocs Pro API',
