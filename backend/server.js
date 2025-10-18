@@ -51,8 +51,9 @@ if (isProduction) {
     app.use('/api/user', require('./routes/user-demo'));
 }
 
-// Migration route (only for initial setup) - MUST be before other routes
+// Migration routes (only for initial setup) - MUST be before other routes
 app.use('/', require('./routes/migrate'));
+app.use('/', require('./routes/reset-db'));
 
 // These routes work in both modes
 app.use('/api/ai', require('./routes/ai-assistant'));
