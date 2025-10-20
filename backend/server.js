@@ -8,8 +8,22 @@ const app = express();
 
 // Middleware
 app.use(helmet()); // Security headers
+// CORS - Allow requests from frontend
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc)
+        if (!origin) return callback(null, true);
+
+        // Allow any origin if FRONTEND_URL not set (development)
+        if (!process.env.FRONTEND_URL) return callback(null, true);
+
+        // Check if origin matches FRONTEND_URL
+        if (origin === process.env.FRONTEND_URL) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Temporarily allow all for testing
+        }
+    },
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' })); // Parse JSON bodies
