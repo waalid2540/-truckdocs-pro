@@ -35,5 +35,5 @@ services:
 
 databases:
   - name: truckdocs-database
-    plan: starter
-    region: oregon
+    databaseName: truckdocs
+    user: truckdocs
