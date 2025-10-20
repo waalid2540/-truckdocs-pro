@@ -42,6 +42,9 @@ function App() {
 
           {/* Default route */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          {/* Catch-all route for 404 */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
