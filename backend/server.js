@@ -59,6 +59,7 @@ if (isProduction) {
     app.use('/api/ifta', require('./routes/ifta'));
     app.use('/api/subscription', require('./routes/subscription'));
     app.use('/api/user', require('./routes/user'));
+    app.use('/api/admin', require('./routes/admin'));
 } else {
     console.log('🧪 Demo mode: Using in-memory storage (no database)');
     app.use('/api/auth', require('./routes/auth-demo'));
