@@ -61,6 +61,10 @@ if (isProduction) {
     app.use('/api/user', require('./routes/user'));
     app.use('/api/admin', require('./routes/admin'));
     app.use('/api/document-alerts', require('./routes/document-alerts'));
+    // LOAD BOARD ROUTES
+    app.use('/api/loads', require('./routes/loads'));
+    app.use('/api/bookings', require('./routes/bookings'));
+    app.use('/api/broker-profiles', require('./routes/broker-profiles'));
 } else {
     console.log('🧪 Demo mode: Using in-memory storage (no database)');
     app.use('/api/auth', require('./routes/auth-demo'));
@@ -71,6 +75,7 @@ if (isProduction) {
 app.use('/', require('./routes/migrate'));
 app.use('/', require('./routes/reset-db'));
 app.use('/', require('./routes/add-expiration-fields'));
+app.use('/', require('./routes/load-board-migration'));
 
 // These routes work in both modes
 app.use('/api/ai', require('./routes/ai-assistant'));

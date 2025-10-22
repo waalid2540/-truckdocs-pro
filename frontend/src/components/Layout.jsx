@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool } from 'lucide-react'
+import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList } from 'lucide-react'
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
@@ -33,7 +33,18 @@ export default function Layout({ children }) {
             <NavLink to="/invoices" icon={DollarSign} label="Invoices" active={isActive('/invoices')} />
             <NavLink to="/expenses" icon={Receipt} label="Expenses" active={isActive('/expenses')} />
             <NavLink to="/ifta" icon={Fuel} label="IFTA" active={isActive('/ifta')} />
-            <NavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
+
+            {/* Load Board Section */}
+            <div className="pt-4 border-t border-blue-800 mt-4">
+              <p className="text-xs text-blue-300 px-4 mb-2 font-semibold uppercase">Load Board</p>
+              <NavLink to="/load-board" icon={Package} label="Find Loads" active={isActive('/load-board')} />
+              <NavLink to="/post-load" icon={PlusSquare} label="Post Load" active={isActive('/post-load')} />
+              <NavLink to="/my-bookings" icon={ClipboardList} label="My Bookings" active={isActive('/my-bookings')} />
+            </div>
+
+            <div className="pt-4 border-t border-blue-800 mt-4">
+              <NavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
+            </div>
           </nav>
         </div>
 

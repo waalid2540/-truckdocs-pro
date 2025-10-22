@@ -15,6 +15,10 @@ import Expenses from './pages/Expenses'
 import IFTA from './pages/IFTA'
 import Settings from './pages/Settings'
 import Pricing from './pages/Pricing'
+// Load Board pages
+import LoadBoard from './pages/LoadBoard'
+import PostLoad from './pages/PostLoad'
+import MyBookings from './pages/MyBookings'
 
 // Context for auth
 import { AuthProvider } from './context/AuthContext'
@@ -39,6 +43,10 @@ function App() {
           <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
           <Route path="/ifta" element={<ProtectedRoute><IFTA /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          {/* LOAD BOARD ROUTES */}
+          <Route path="/load-board" element={<ProtectedRoute><LoadBoard /></ProtectedRoute>} />
+          <Route path="/post-load" element={<ProtectedRoute><PostLoad /></ProtectedRoute>} />
+          <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
 
           {/* Default route */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
