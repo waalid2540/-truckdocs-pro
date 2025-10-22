@@ -9,7 +9,7 @@ router.get('/users', async (req, res) => {
     try {
         const result = await query(
             `SELECT id, email, full_name, subscription_status,
-                    subscription_end_date, created_at, updated_at
+                    subscription_tier, subscription_ends_at, created_at, updated_at
              FROM users
              ORDER BY created_at DESC`
         );
@@ -44,7 +44,7 @@ router.get('/user/:id', async (req, res) => {
     try {
         const user = await query(
             `SELECT id, email, full_name, subscription_status,
-                    subscription_end_date, created_at, updated_at
+                    subscription_tier, subscription_ends_at, created_at, updated_at
              FROM users
              WHERE id = $1`,
             [req.params.id]
