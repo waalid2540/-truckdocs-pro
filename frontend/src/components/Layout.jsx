@@ -15,13 +15,19 @@ export default function Layout({ children }) {
   const isActive = (path) => location.pathname === path
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="w-64 bg-blue-900 text-white flex flex-col">
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar - Enhanced */}
+      <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-900 text-white flex flex-col shadow-2xl">
         <div className="p-6 flex-1">
-          <div className="flex items-center gap-2 mb-8">
-            <Truck className="w-8 h-8" />
-            <h1 className="text-xl font-bold">TruckDocs Pro</h1>
+          {/* Logo Section - Enhanced */}
+          <div className="flex items-center gap-3 mb-10 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <div className="bg-white p-2 rounded-lg">
+              <Truck className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">TruckDocs Pro</h1>
+              <p className="text-xs text-blue-200">Enterprise Solution</p>
+            </div>
           </div>
 
           <nav className="space-y-2">
@@ -34,29 +40,34 @@ export default function Layout({ children }) {
             <NavLink to="/expenses" icon={Receipt} label="Expenses" active={isActive('/expenses')} />
             <NavLink to="/ifta" icon={Fuel} label="IFTA" active={isActive('/ifta')} />
 
-            {/* Load Board Section */}
-            <div className="pt-4 border-t border-blue-800 mt-4">
-              <p className="text-xs text-blue-300 px-4 mb-2 font-semibold uppercase">Load Board</p>
+            {/* Load Board Section - Enhanced */}
+            <div className="pt-4 border-t border-white/20 mt-4">
+              <div className="px-4 mb-3 flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-green-400"></div>
+                <p className="text-xs text-green-300 font-bold uppercase tracking-wider">Freight Marketplace</p>
+              </div>
               <NavLink to="/load-board" icon={Package} label="Find Loads" active={isActive('/load-board')} />
               <NavLink to="/post-load" icon={PlusSquare} label="Post Load" active={isActive('/post-load')} />
               <NavLink to="/my-bookings" icon={ClipboardList} label="My Bookings" active={isActive('/my-bookings')} />
             </div>
 
-            <div className="pt-4 border-t border-blue-800 mt-4">
+            <div className="pt-4 border-t border-white/20 mt-4">
               <NavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
             </div>
           </nav>
         </div>
 
-        {/* User Info */}
-        <div className="p-6 border-t border-blue-800">
-          <p className="text-sm text-blue-200">Logged in as</p>
-          <p className="font-medium truncate">{user?.full_name || user?.email}</p>
+        {/* User Info - Enhanced */}
+        <div className="p-6 border-t border-white/20 bg-black/20">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-3">
+            <p className="text-xs text-blue-200 mb-1">Logged in as</p>
+            <p className="font-bold truncate text-white">{user?.full_name || user?.email}</p>
+          </div>
           <button
             onClick={handleLogout}
-            className="mt-4 w-full bg-blue-800 hover:bg-blue-700 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
+            className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-5 h-5" />
             Logout
           </button>
         </div>
@@ -74,12 +85,14 @@ function NavLink({ to, icon: Icon, label, active }) {
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-        active ? 'bg-blue-800' : 'hover:bg-blue-800'
+      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 font-medium ${
+        active
+          ? 'bg-white text-blue-900 shadow-lg transform scale-105'
+          : 'hover:bg-white/10 hover:translate-x-1 text-blue-100'
       }`}
     >
-      <Icon className="w-5 h-5" />
-      {label}
+      <Icon className={`w-5 h-5 ${active ? 'text-blue-600' : ''}`} />
+      <span className="text-sm">{label}</span>
     </Link>
   )
 }

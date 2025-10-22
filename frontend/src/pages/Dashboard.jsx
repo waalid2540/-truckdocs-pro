@@ -59,53 +59,102 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back! Here's your overview.</p>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        {/* Hero Section */}
+        <div className="mb-8 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 rounded-2xl shadow-2xl p-8 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">TruckDocs Pro</h1>
+              <p className="text-blue-100 text-lg">Enterprise Document Management & Freight Marketplace</p>
+            </div>
+            <div className="hidden md:block">
+              <Truck className="w-20 h-20 text-blue-300 opacity-50" />
+            </div>
+          </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+          <div className="text-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
+            <p className="mt-6 text-gray-600 text-lg">Loading your dashboard...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-lg shadow">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6" />
+              <span>{error}</span>
+            </div>
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
+            {/* Primary Stats Grid - Enhanced */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                 icon={FileText}
-                label="Documents"
+                label="Total Documents"
                 value={stats?.documents?.count || 0}
-                color="bg-blue-500"
+                trend="+12%"
+                trendUp={true}
+                color="bg-gradient-to-br from-blue-500 to-blue-600"
                 link="/documents"
               />
               <StatCard
                 icon={DollarSign}
-                label="Unpaid Invoices"
-                value={`$${(stats?.invoices?.unpaid || 0).toFixed(2)}`}
-                color="bg-green-500"
+                label="Pending Revenue"
+                value={`$${(stats?.invoices?.unpaid || 0).toLocaleString()}`}
+                trend="+8%"
+                trendUp={true}
+                color="bg-gradient-to-br from-green-500 to-green-600"
                 link="/invoices"
               />
               <StatCard
                 icon={Receipt}
                 label="Monthly Expenses"
-                value={`$${(stats?.expenses?.total || 0).toFixed(2)}`}
-                color="bg-red-500"
+                value={`$${(stats?.expenses?.total || 0).toLocaleString()}`}
+                trend="-5%"
+                trendUp={false}
+                color="bg-gradient-to-br from-orange-500 to-orange-600"
                 link="/expenses"
               />
               <StatCard
                 icon={Fuel}
                 label="IFTA Records"
                 value={stats?.ifta?.count || 0}
-                color="bg-purple-500"
+                trend="+15"
+                trendUp={true}
+                color="bg-gradient-to-br from-purple-500 to-purple-600"
                 link="/ifta"
               />
+            </div>
+
+            {/* Load Board Stats - New Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <Link to="/load-board" className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-l-4 border-blue-500">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-700">Available Loads</h3>
+                  <Truck className="w-8 h-8 text-blue-500" />
+                </div>
+                <p className="text-4xl font-bold text-gray-900 mb-2">247</p>
+                <p className="text-sm text-gray-500">Active freight opportunities</p>
+              </Link>
+
+              <Link to="/my-bookings" className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-l-4 border-green-500">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-700">Active Bookings</h3>
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                </div>
+                <p className="text-4xl font-bold text-gray-900 mb-2">12</p>
+                <p className="text-sm text-gray-500">Loads in progress</p>
+              </Link>
+
+              <Link to="/post-load" className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-l-4 border-indigo-500">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-700">Post New Load</h3>
+                  <TrendingUp className="w-8 h-8 text-indigo-500" />
+                </div>
+                <p className="text-2xl font-bold text-indigo-600 mb-2">Start Posting</p>
+                <p className="text-sm text-gray-500">Connect with carriers nationwide</p>
+              </Link>
             </div>
 
             {/* Document Expiration Alerts */}
@@ -137,26 +186,45 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow p-6 mb-8">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
+            {/* Quick Actions - Enterprise Style */}
+            <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
                 Quick Actions
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <ActionButton to="/ai-assistant" label="AI Assistant" />
-                <ActionButton to="/receipt-scanner" label="Scan Receipt" />
-                <ActionButton to="/signature" label="Sign Document" />
-                <ActionButton to="/ifta" label="IFTA Report" />
+                <ActionButton to="/ai-assistant" label="AI Assistant" icon="🤖" />
+                <ActionButton to="/receipt-scanner" label="Scan Receipt" icon="📸" />
+                <ActionButton to="/signature" label="Sign Document" icon="✍️" />
+                <ActionButton to="/ifta" label="IFTA Report" icon="⛽" />
               </div>
             </div>
 
-            {/* Welcome Message */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
-              <h3 className="text-xl font-bold mb-2">Welcome to TruckDocs Pro!</h3>
-              <p className="text-blue-100">
-                Your all-in-one document management system with AI-powered features, OCR scanning, digital signatures, and automated reminders.
-              </p>
+            {/* Enterprise Features Banner */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl shadow-xl p-8 text-white">
+                <h3 className="text-2xl font-bold mb-3">AI-Powered Automation</h3>
+                <p className="text-blue-100 mb-4">
+                  Streamline your operations with intelligent document processing, OCR scanning, and automated compliance tracking.
+                </p>
+                <Link to="/ai-assistant" className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+                  Try AI Assistant
+                  <TrendingUp className="w-4 h-4" />
+                </Link>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl shadow-xl p-8 text-white">
+                <h3 className="text-2xl font-bold mb-3">Freight Marketplace</h3>
+                <p className="text-green-100 mb-4">
+                  Connect with thousands of carriers and shippers. Post loads, find freight, and manage bookings all in one platform.
+                </p>
+                <Link to="/load-board" className="inline-flex items-center gap-2 bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors">
+                  Browse Loads
+                  <Truck className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </>
         )}
@@ -165,30 +233,35 @@ export default function Dashboard() {
   )
 }
 
-function StatCard({ icon: Icon, label, value, color, link }) {
+function StatCard({ icon: Icon, label, value, color, link, trend, trendUp }) {
   return (
-    <Link to={link} className="block">
-      <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-gray-600 text-sm">{label}</p>
-            <p className="text-2xl font-bold mt-2">{value}</p>
+    <Link to={link} className="block group">
+      <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`${color} p-3 rounded-lg shadow-lg`}>
+            <Icon className="w-7 h-7 text-white" />
           </div>
-          <div className={`${color} p-3 rounded-lg`}>
-            <Icon className="w-6 h-6 text-white" />
-          </div>
+          {trend && (
+            <span className={`text-sm font-semibold flex items-center gap-1 ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
+              <TrendingUp className={`w-4 h-4 ${!trendUp && 'rotate-180'}`} />
+              {trend}
+            </span>
+          )}
         </div>
+        <p className="text-gray-600 text-sm font-medium mb-1">{label}</p>
+        <p className="text-3xl font-bold text-gray-900">{value}</p>
       </div>
     </Link>
   )
 }
 
-function ActionButton({ to, label }) {
+function ActionButton({ to, label, icon }) {
   return (
     <Link
       to={to}
-      className="bg-blue-600 text-white py-3 px-6 rounded-lg text-center hover:bg-blue-700 transition-colors font-medium"
+      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl text-center hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
     >
+      <span className="text-2xl">{icon}</span>
       {label}
     </Link>
   )

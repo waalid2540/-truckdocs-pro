@@ -101,14 +101,28 @@ export default function LoadBoard() {
 
   return (
     <Layout>
-      <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Load Board</h1>
-          <p className="text-gray-600 mt-2">Find and book freight loads from verified brokers</p>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        {/* Hero Section */}
+        <div className="mb-8 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 rounded-2xl shadow-2xl p-8 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+                <Truck className="w-10 h-10" />
+                Freight Marketplace
+              </h1>
+              <p className="text-green-100 text-lg">Find profitable loads • Book instantly • Grow your business</p>
+            </div>
+            <div className="hidden md:flex items-center gap-6">
+              <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg px-6 py-3">
+                <p className="text-3xl font-bold">{loads.length}</p>
+                <p className="text-green-100 text-sm">Available Loads</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Search Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
+        {/* Search Filters - Enhanced */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium mb-1">Origin State</label>
@@ -178,17 +192,21 @@ export default function LoadBoard() {
           <button
             onClick={searchLoads}
             disabled={loading}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 flex items-center gap-2 font-semibold shadow-lg transition-all duration-300"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-5 h-5" />
             {loading ? 'Searching...' : 'Search Loads'}
           </button>
         </div>
 
-        {/* Results */}
-        <div className="bg-white rounded-lg shadow p-6">
+        {/* Results - Enhanced */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">Available Loads ({loads.length})</h2>
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Truck className="w-6 h-6 text-green-600" />
+              Available Loads
+              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-lg ml-2">{loads.length}</span>
+            </h2>
             <select
               value={filters.sort_by}
               onChange={(e) => {
@@ -220,7 +238,7 @@ export default function LoadBoard() {
               {loads.map((load) => (
                 <div
                   key={load.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  className="border-2 border-gray-200 rounded-xl p-6 hover:shadow-2xl hover:border-green-400 transition-all duration-300 cursor-pointer bg-gradient-to-r from-white to-gray-50 transform hover:-translate-y-1"
                   onClick={() => {
                     setSelectedLoad(load)
                     setShowDetails(true)
@@ -228,55 +246,63 @@ export default function LoadBoard() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="flex items-center gap-2">
+                      {/* Route with enhanced styling */}
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
                           <MapPin className="w-5 h-5 text-green-600" />
-                          <span className="font-semibold">{load.origin_city}, {load.origin_state}</span>
+                          <span className="font-bold text-gray-800">{load.origin_city}, {load.origin_state}</span>
                         </div>
-                        <span className="text-gray-400">→</span>
                         <div className="flex items-center gap-2">
+                          <div className="h-1 w-8 bg-gradient-to-r from-green-400 to-red-400 rounded"></div>
+                          <Truck className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <div className="flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg">
                           <MapPin className="w-5 h-5 text-red-600" />
-                          <span className="font-semibold">{load.destination_city}, {load.destination_state}</span>
+                          <span className="font-bold text-gray-800">{load.destination_city}, {load.destination_state}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Truck className="w-4 h-4" />
-                          <span className="capitalize">{load.equipment_type.replace('_', ' ')}</span>
+                      {/* Load Details */}
+                      <div className="flex items-center gap-4 text-sm mb-3 flex-wrap">
+                        <div className="flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-lg">
+                          <Truck className="w-4 h-4 text-blue-600" />
+                          <span className="capitalize font-medium text-gray-700">{load.equipment_type.replace('_', ' ')}</span>
                         </div>
                         {load.distance_miles && (
-                          <span>{load.distance_miles} miles</span>
+                          <span className="bg-purple-50 px-3 py-1 rounded-lg font-medium text-gray-700">{load.distance_miles} miles</span>
                         )}
                         {load.weight && (
-                          <span>{load.weight.toLocaleString()} lbs</span>
+                          <span className="bg-orange-50 px-3 py-1 rounded-lg font-medium text-gray-700">{load.weight.toLocaleString()} lbs</span>
                         )}
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>Pickup: {formatDate(load.pickup_date)}</span>
+                        <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1 rounded-lg">
+                          <Calendar className="w-4 h-4 text-yellow-600" />
+                          <span className="font-medium text-gray-700">Pickup: {formatDate(load.pickup_date)}</span>
                         </div>
                       </div>
 
+                      {/* Broker Info */}
                       {load.broker_company_name && (
-                        <div className="mt-2 flex items-center gap-2 text-sm">
-                          <span className="text-gray-600">Broker:</span>
-                          <span className="font-medium">{load.broker_company_name}</span>
+                        <div className="flex items-center gap-3 text-sm bg-gray-50 px-4 py-2 rounded-lg inline-flex">
+                          <span className="text-gray-600 font-medium">Broker:</span>
+                          <span className="font-bold text-gray-800">{load.broker_company_name}</span>
                           {load.broker_rating && (
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                              <span>{load.broker_rating.toFixed(1)}</span>
+                            <div className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded">
+                              <Star className="w-4 h-4 text-yellow-600 fill-yellow-500" />
+                              <span className="font-bold text-yellow-700">{load.broker_rating.toFixed(1)}</span>
                             </div>
                           )}
                         </div>
                       )}
                     </div>
 
-                    <div className="text-right ml-4">
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(load.total_rate)}
+                    {/* Rate Section - Enhanced */}
+                    <div className="text-right ml-6 flex flex-col items-end gap-2">
+                      <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg">
+                        <p className="text-xs font-medium mb-1">Total Rate</p>
+                        <p className="text-3xl font-bold">{formatCurrency(load.total_rate)}</p>
                       </div>
                       {load.rate_per_mile && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm font-semibold text-gray-700 bg-gray-100 px-4 py-2 rounded-lg">
                           {formatCurrency(load.rate_per_mile)}/mile
                         </div>
                       )}
@@ -286,7 +312,7 @@ export default function LoadBoard() {
                           setSelectedLoad(load)
                           setShowDetails(true)
                         }}
-                        className="mt-2 bg-blue-600 text-white px-4 py-1 rounded text-sm hover:bg-blue-700"
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-semibold shadow-md transition-all duration-300 transform hover:scale-105"
                       >
                         View Details
                       </button>
