@@ -60,6 +60,7 @@ if (isProduction) {
     app.use('/api/subscription', require('./routes/subscription'));
     app.use('/api/user', require('./routes/user'));
     app.use('/api/admin', require('./routes/admin'));
+    app.use('/api/document-alerts', require('./routes/document-alerts'));
 } else {
     console.log('🧪 Demo mode: Using in-memory storage (no database)');
     app.use('/api/auth', require('./routes/auth-demo'));
@@ -69,6 +70,7 @@ if (isProduction) {
 // Migration routes (only for initial setup) - MUST be before other routes
 app.use('/', require('./routes/migrate'));
 app.use('/', require('./routes/reset-db'));
+app.use('/', require('./routes/add-expiration-fields'));
 
 // These routes work in both modes
 app.use('/api/ai', require('./routes/ai-assistant'));

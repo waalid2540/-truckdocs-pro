@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout from '../components/Layout'
-import { FileText, Upload, Search, Download, Trash2, Eye } from 'lucide-react'
+import { FileText, Upload, Search, Download, Trash2, Eye, PenTool, CheckCircle } from 'lucide-react'
 import axios from '../api/axios'
+import SignaturePad from '../components/SignaturePad'
 
 export default function Documents() {
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showSignaturePad, setShowSignaturePad] = useState(false)
+  const [selectedDoc, setSelectedDoc] = useState(null)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -62,6 +65,26 @@ export default function Documents() {
     } catch (error) {
       console.error('Delete failed:', error)
       alert('Failed to delete document')
+    }
+  }
+
+  const handleSignDocument = (doc) => {
+    setSelectedDoc(doc)
+    setShowSignaturePad(true)
+  }
+
+  const handleSaveSignature = async (signatureData) => {
+    try {
+      await axios.put(`/api/documents/${selectedDoc.id}`, {
+        has_signature: true,
+        signature_data: signatureData
+      })
+
+      await fetchDocuments()
+      setSelectedDoc(null)
+    } catch (error) {
+      console.error('Failed to save signature:', error)
+      alert('Failed to save signature')
     }
   }
 
@@ -143,13 +166,30 @@ export default function Documents() {
                   <div className="flex items-center gap-3">
                     <FileText className="w-8 h-8 text-blue-600" />
                     <div>
-                      <h3 className="font-semibold">{doc.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{doc.title}</h3>
+                        {doc.has_signature && (
+                          <CheckCircle className="w-4 h-4 text-green-600" title="Signed" />
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500">
                         {doc.document_type} • {new Date(doc.uploaded_at).toLocaleDateString()}
+                        {doc.expiration_date && (
+                          <span className="ml-2 text-orange-600">
+                            • Expires: {new Date(doc.expiration_date).toLocaleDateString()}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSignDocument(doc)}
+                      className="p-2 text-purple-600 hover:bg-purple-50 rounded"
+                      title="Sign Document"
+                    >
+                      <PenTool className="w-5 h-5" />
+                    </button>
                     {doc.file_url && (
                       <a
                         href={doc.file_url}
@@ -184,6 +224,17 @@ export default function Documents() {
             </div>
           )}
         </div>
+
+        {/* Signature Pad Modal */}
+        <SignaturePad
+          isOpen={showSignaturePad}
+          onClose={() => {
+            setShowSignaturePad(false)
+            setSelectedDoc(null)
+          }}
+          onSave={handleSaveSignature}
+          documentTitle={selectedDoc?.title || 'Document'}
+        />
       </div>
     </Layout>
   )

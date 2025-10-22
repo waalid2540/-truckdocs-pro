@@ -3,6 +3,7 @@ import axios from '../api/axios'
 import { Truck, FileText, DollarSign, Fuel, TrendingUp, Receipt, Bell, AlertCircle, Calendar, CheckCircle } from 'lucide-react'
 import Layout from '../components/Layout'
 import { Link } from 'react-router-dom'
+import DocumentAlerts from '../components/DocumentAlerts'
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
@@ -105,6 +106,11 @@ export default function Dashboard() {
                 color="bg-purple-500"
                 link="/ifta"
               />
+            </div>
+
+            {/* Document Expiration Alerts */}
+            <div className="mb-8">
+              <DocumentAlerts />
             </div>
 
             {/* Reminders & Notifications */}
