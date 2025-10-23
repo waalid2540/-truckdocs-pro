@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList, ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
@@ -19,6 +19,20 @@ export default function Layout({ children }) {
   const toggleDropdown = (name) => {
     setOpenDropdown(openDropdown === name ? null : name)
   }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdown && !event.target.closest('.dropdown-container')) {
+        setOpenDropdown(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [openDropdown])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
@@ -124,7 +138,7 @@ function DropdownMenu({ label, icon: Icon, isOpen, onToggle, items }) {
   const hasActiveItem = items.some(item => item.active)
 
   return (
-    <div className="relative">
+    <div className="relative dropdown-container">
       {/* Dropdown Button */}
       <button
         onClick={onToggle}
