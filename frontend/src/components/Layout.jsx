@@ -30,15 +30,8 @@ export default function Layout({ children }) {
 
           <nav className="space-y-2">
             <NavLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={isActive('/dashboard')} />
-            <NavLink to="/ai-assistant" icon={Sparkles} label="AI Assistant" active={isActive('/ai-assistant')} />
-            <NavLink to="/receipt-scanner" icon={Scan} label="Receipt Scanner" active={isActive('/receipt-scanner')} />
-            <NavLink to="/signature" icon={PenTool} label="Digital Signature" active={isActive('/signature')} />
-            <NavLink to="/documents" icon={FileText} label="Documents" active={isActive('/documents')} />
-            <NavLink to="/invoices" icon={DollarSign} label="Invoices" active={isActive('/invoices')} />
-            <NavLink to="/expenses" icon={Receipt} label="Expenses" active={isActive('/expenses')} />
-            <NavLink to="/ifta" icon={Fuel} label="IFTA" active={isActive('/ifta')} />
 
-            {/* Load Board Section - PREMIUM */}
+            {/* FREIGHT MARKETPLACE - TOP SECTION */}
             <div className="pt-6 border-t-2 border-gray-200 mt-6">
               <div className="px-2 mb-4 flex items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border-l-4 border-green-500">
                 <Truck className="w-5 h-5 text-green-600" />
@@ -48,6 +41,23 @@ export default function Layout({ children }) {
                 <NavLink to="/load-board" icon={Package} label="Find Loads" active={isActive('/load-board')} />
                 <NavLink to="/post-load" icon={PlusSquare} label="Post Load" active={isActive('/post-load')} />
                 <NavLink to="/my-bookings" icon={ClipboardList} label="My Bookings" active={isActive('/my-bookings')} />
+              </div>
+            </div>
+
+            {/* DOCUMENTS & OPERATIONS */}
+            <div className="pt-6 border-t-2 border-gray-200 mt-6">
+              <div className="px-2 mb-4 flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border-l-4 border-blue-500">
+                <FileText className="w-5 h-5 text-blue-600" />
+                <p className="text-sm text-gray-900 font-black uppercase tracking-wide">Documents & Finance</p>
+              </div>
+              <div className="space-y-2">
+                <NavLink to="/ai-assistant" icon={Sparkles} label="AI Assistant" active={isActive('/ai-assistant')} />
+                <NavLink to="/receipt-scanner" icon={Scan} label="Receipt Scanner" active={isActive('/receipt-scanner')} />
+                <NavLink to="/signature" icon={PenTool} label="Digital Signature" active={isActive('/signature')} />
+                <NavLink to="/documents" icon={FileText} label="Documents" active={isActive('/documents')} />
+                <NavLink to="/invoices" icon={DollarSign} label="Invoices" active={isActive('/invoices')} />
+                <NavLink to="/expenses" icon={Receipt} label="Expenses" active={isActive('/expenses')} />
+                <NavLink to="/ifta" icon={Fuel} label="IFTA" active={isActive('/ifta')} />
               </div>
             </div>
 
