@@ -86,11 +86,14 @@ app.use('/api/reminders', require('./routes/reminders'));
 // Welcome route - MUST be after all other routes
 app.get('/', (req, res) => {
     res.json({
-        message: 'TruckDocs Pro API',
+        message: 'FreightHub Pro API',
         version: '1.0.0',
+        tagline: 'Complete Trucking Command Center',
         endpoints: {
             health: '/health',
             auth: '/api/auth',
+            loads: '/api/loads',
+            bookings: '/api/bookings',
             documents: '/api/documents',
             invoices: '/api/invoices',
             expenses: '/api/expenses',
@@ -136,7 +139,8 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`🚛 TruckDocs Pro API running on port ${PORT}`);
+    console.log(`🚛 FreightHub Pro API running on port ${PORT}`);
+    console.log(`📦 Complete Trucking Command Center`);
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🌐 CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
 });

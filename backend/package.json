@@ -1,7 +1,7 @@
 {
-  "name": "truckdocs-backend",
+  "name": "freighthub-backend",
   "version": "1.0.0",
-  "description": "TruckDocs Pro - Backend API for truck driver document management",
+  "description": "FreightHub Pro - Complete Trucking Command Center API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

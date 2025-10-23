@@ -37,17 +37,17 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       {/* TOP NAVIGATION BAR - HORIZONTAL */}
-      <header className="bg-white border-b-4 border-blue-600 shadow-xl sticky top-0 z-50">
+      <header className="bg-white border-b-4 border-green-600 shadow-xl sticky top-0 z-50">
         <div className="max-w-full px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Logo Section - LEFT */}
             <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-3 rounded-xl shadow-lg">
+              <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-3 rounded-xl shadow-lg">
                 <Truck className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-black text-gray-900">TruckDocs Pro</h1>
-                <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Enterprise Platform</p>
+                <h1 className="text-2xl font-black text-gray-900">FreightHub Pro</h1>
+                <p className="text-xs font-bold text-green-600 uppercase tracking-wider">Complete Trucking Command Center</p>
               </div>
             </div>
 
