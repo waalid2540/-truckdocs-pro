@@ -1,11 +1,13 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList } from 'lucide-react'
+import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList, ChevronDown } from 'lucide-react'
+import { useState } from 'react'
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [openDropdown, setOpenDropdown] = useState(null)
 
   const handleLogout = () => {
     logout()
@@ -13,6 +15,10 @@ export default function Layout({ children }) {
   }
 
   const isActive = (path) => location.pathname === path
+
+  const toggleDropdown = (name) => {
+    setOpenDropdown(openDropdown === name ? null : name)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
@@ -31,24 +37,39 @@ export default function Layout({ children }) {
               </div>
             </div>
 
-            {/* HORIZONTAL NAVIGATION - CENTER */}
-            <nav className="flex items-center gap-2">
+            {/* HORIZONTAL NAVIGATION - CENTER WITH DROPDOWNS */}
+            <nav className="flex items-center gap-4">
               <NavLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={isActive('/dashboard')} />
 
-              <div className="h-8 w-px bg-gray-300 mx-2"></div>
+              {/* LOAD BOARD DROPDOWN */}
+              <DropdownMenu
+                label="Load Board"
+                icon={Truck}
+                isOpen={openDropdown === 'loadboard'}
+                onToggle={() => toggleDropdown('loadboard')}
+                items={[
+                  { to: '/load-board', icon: Package, label: 'Find Loads', active: isActive('/load-board') },
+                  { to: '/post-load', icon: PlusSquare, label: 'Post Load', active: isActive('/post-load') },
+                  { to: '/my-bookings', icon: ClipboardList, label: 'My Bookings', active: isActive('/my-bookings') }
+                ]}
+              />
 
-              {/* FREIGHT MARKETPLACE */}
-              <NavLink to="/load-board" icon={Package} label="Find Loads" active={isActive('/load-board')} />
-              <NavLink to="/post-load" icon={PlusSquare} label="Post Load" active={isActive('/post-load')} />
-              <NavLink to="/my-bookings" icon={ClipboardList} label="My Bookings" active={isActive('/my-bookings')} />
-
-              <div className="h-8 w-px bg-gray-300 mx-2"></div>
-
-              {/* DOCUMENTS */}
-              <NavLink to="/documents" icon={FileText} label="Documents" active={isActive('/documents')} />
-              <NavLink to="/invoices" icon={DollarSign} label="Invoices" active={isActive('/invoices')} />
-              <NavLink to="/expenses" icon={Receipt} label="Expenses" active={isActive('/expenses')} />
-              <NavLink to="/ifta" icon={Fuel} label="IFTA" active={isActive('/ifta')} />
+              {/* DOCUMENTS DROPDOWN */}
+              <DropdownMenu
+                label="Documents"
+                icon={FileText}
+                isOpen={openDropdown === 'documents'}
+                onToggle={() => toggleDropdown('documents')}
+                items={[
+                  { to: '/ai-assistant', icon: Sparkles, label: 'AI Assistant', active: isActive('/ai-assistant') },
+                  { to: '/receipt-scanner', icon: Scan, label: 'Receipt Scanner', active: isActive('/receipt-scanner') },
+                  { to: '/signature', icon: PenTool, label: 'Digital Signature', active: isActive('/signature') },
+                  { to: '/documents', icon: FileText, label: 'Documents', active: isActive('/documents') },
+                  { to: '/invoices', icon: DollarSign, label: 'Invoices', active: isActive('/invoices') },
+                  { to: '/expenses', icon: Receipt, label: 'Expenses', active: isActive('/expenses') },
+                  { to: '/ifta', icon: Fuel, label: 'IFTA', active: isActive('/ifta') }
+                ]}
+              />
             </nav>
 
             {/* USER INFO - RIGHT */}
@@ -96,5 +117,52 @@ function NavLink({ to, icon: Icon, label, active }) {
       <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-600'}`} />
       <span className={`font-bold text-sm whitespace-nowrap ${active ? 'text-white' : 'text-gray-900'}`}>{label}</span>
     </Link>
+  )
+}
+
+function DropdownMenu({ label, icon: Icon, isOpen, onToggle, items }) {
+  const hasActiveItem = items.some(item => item.active)
+
+  return (
+    <div className="relative">
+      {/* Dropdown Button */}
+      <button
+        onClick={onToggle}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+          hasActiveItem || isOpen
+            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+            : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
+        }`}
+      >
+        <Icon className={`w-5 h-5 ${hasActiveItem || isOpen ? 'text-white' : 'text-gray-600'}`} />
+        <span className={`font-bold text-sm whitespace-nowrap ${hasActiveItem || isOpen ? 'text-white' : 'text-gray-900'}`}>
+          {label}
+        </span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${hasActiveItem || isOpen ? 'text-white' : 'text-gray-600'}`} />
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border-2 border-gray-200 py-2 min-w-[240px] z-50">
+          {items.map((item, index) => (
+            <Link
+              key={index}
+              to={item.to}
+              onClick={onToggle}
+              className={`flex items-center gap-3 px-4 py-3 transition-all duration-200 ${
+                item.active
+                  ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600'
+                  : 'hover:bg-gray-50 text-gray-700'
+              }`}
+            >
+              <item.icon className={`w-5 h-5 ${item.active ? 'text-blue-600' : 'text-gray-600'}`} />
+              <span className={`font-semibold text-sm ${item.active ? 'text-blue-600' : 'text-gray-900'}`}>
+                {item.label}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
