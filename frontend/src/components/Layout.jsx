@@ -15,19 +15,17 @@ export default function Layout({ children }) {
   const isActive = (path) => location.pathname === path
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Enhanced */}
-      <div className="w-72 bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-900 text-white flex flex-col shadow-2xl">
-        <div className="p-6 flex-1">
-          {/* Logo Section - Enhanced */}
-          <div className="flex items-center gap-3 mb-10 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-            <div className="bg-white p-2 rounded-lg">
-              <Truck className="w-8 h-8 text-blue-600" />
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      {/* Sidebar - PREMIUM REDESIGN */}
+      <div className="w-80 bg-white flex flex-col shadow-2xl border-r-4 border-blue-600">
+        <div className="p-8 flex-1">
+          {/* Logo Section - LUXURY */}
+          <div className="mb-12 text-center">
+            <div className="inline-flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-700 p-4 rounded-2xl shadow-xl mb-4">
+              <Truck className="w-12 h-12 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold">TruckDocs Pro</h1>
-              <p className="text-xs text-blue-200">Enterprise Solution</p>
-            </div>
+            <h1 className="text-2xl font-black text-gray-900 mb-1">TruckDocs Pro</h1>
+            <p className="text-sm font-semibold text-blue-600 uppercase tracking-wider">Enterprise Platform</p>
           </div>
 
           <nav className="space-y-2">
@@ -40,35 +38,37 @@ export default function Layout({ children }) {
             <NavLink to="/expenses" icon={Receipt} label="Expenses" active={isActive('/expenses')} />
             <NavLink to="/ifta" icon={Fuel} label="IFTA" active={isActive('/ifta')} />
 
-            {/* Load Board Section - Enhanced */}
-            <div className="pt-4 border-t border-white/20 mt-4">
-              <div className="px-4 mb-3 flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-green-400"></div>
-                <p className="text-xs text-green-300 font-bold uppercase tracking-wider">Freight Marketplace</p>
+            {/* Load Board Section - PREMIUM */}
+            <div className="pt-6 border-t-2 border-gray-200 mt-6">
+              <div className="px-2 mb-4 flex items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border-l-4 border-green-500">
+                <Truck className="w-5 h-5 text-green-600" />
+                <p className="text-sm text-gray-900 font-black uppercase tracking-wide">Freight Marketplace</p>
               </div>
-              <NavLink to="/load-board" icon={Package} label="Find Loads" active={isActive('/load-board')} />
-              <NavLink to="/post-load" icon={PlusSquare} label="Post Load" active={isActive('/post-load')} />
-              <NavLink to="/my-bookings" icon={ClipboardList} label="My Bookings" active={isActive('/my-bookings')} />
+              <div className="space-y-2">
+                <NavLink to="/load-board" icon={Package} label="Find Loads" active={isActive('/load-board')} />
+                <NavLink to="/post-load" icon={PlusSquare} label="Post Load" active={isActive('/post-load')} />
+                <NavLink to="/my-bookings" icon={ClipboardList} label="My Bookings" active={isActive('/my-bookings')} />
+              </div>
             </div>
 
-            <div className="pt-4 border-t border-white/20 mt-4">
+            <div className="pt-6 border-t-2 border-gray-200 mt-6">
               <NavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
             </div>
           </nav>
         </div>
 
-        {/* User Info - Enhanced */}
-        <div className="p-6 border-t border-white/20 bg-black/20">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-3">
-            <p className="text-xs text-blue-200 mb-1">Logged in as</p>
-            <p className="font-bold truncate text-white">{user?.full_name || user?.email}</p>
+        {/* User Info - PREMIUM */}
+        <div className="p-8 border-t-2 border-gray-200 bg-gradient-to-br from-gray-50 to-blue-50">
+          <div className="bg-white rounded-2xl p-5 mb-4 shadow-lg border border-gray-200">
+            <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider mb-2">Logged in as</p>
+            <p className="font-black text-gray-900 truncate text-lg">{user?.full_name || user?.email}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 font-semibold shadow-lg transform hover:scale-105"
+            className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-200 font-bold shadow-xl transform hover:scale-105 text-white text-base"
           >
             <LogOut className="w-5 h-5" />
-            Logout
+            Sign Out
           </button>
         </div>
       </div>
@@ -85,14 +85,16 @@ function NavLink({ to, icon: Icon, label, active }) {
   return (
     <Link
       to={to}
-      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 font-medium ${
+      className={`flex items-center gap-4 px-5 py-4 rounded-xl transition-all duration-200 group ${
         active
-          ? 'bg-white text-blue-900 shadow-lg transform scale-105'
-          : 'hover:bg-white/10 hover:translate-x-1 text-blue-100'
+          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl transform scale-105'
+          : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:shadow-md hover:scale-102 border border-gray-200'
       }`}
     >
-      <Icon className={`w-5 h-5 ${active ? 'text-blue-600' : ''}`} />
-      <span className="text-sm">{label}</span>
+      <div className={`p-2 rounded-lg ${active ? 'bg-white/20' : 'bg-white group-hover:bg-blue-50'}`}>
+        <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-blue-600'}`} />
+      </div>
+      <span className={`font-bold text-base ${active ? 'text-white' : 'text-gray-900'}`}>{label}</span>
     </Link>
   )
 }

@@ -59,18 +59,11 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="p-8 bg-gray-50 min-h-screen">
-        {/* Hero Section */}
-        <div className="mb-8 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 rounded-2xl shadow-2xl p-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">TruckDocs Pro</h1>
-              <p className="text-blue-100 text-lg">Enterprise Document Management & Freight Marketplace</p>
-            </div>
-            <div className="hidden md:block">
-              <Truck className="w-20 h-20 text-blue-300 opacity-50" />
-            </div>
-          </div>
+      <div className="p-12 bg-white min-h-screen">
+        {/* Hero Section - PREMIUM */}
+        <div className="mb-12">
+          <h1 className="text-5xl font-black text-gray-900 mb-3">Dashboard</h1>
+          <p className="text-xl text-gray-600 font-semibold">Complete overview of your trucking business</p>
         </div>
 
         {loading ? (
@@ -127,34 +120,45 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Load Board Stats - New Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              <Link to="/load-board" className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-l-4 border-blue-500">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-700">Available Loads</h3>
-                  <Truck className="w-8 h-8 text-blue-500" />
-                </div>
-                <p className="text-4xl font-bold text-gray-900 mb-2">247</p>
-                <p className="text-sm text-gray-500">Active freight opportunities</p>
-              </Link>
+            {/* Load Board Stats - PREMIUM */}
+            <div className="mb-12">
+              <h2 className="text-3xl font-black text-gray-900 mb-6">Freight Marketplace</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <Link to="/load-board" className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-8 hover:shadow-2xl hover:border-blue-500 transition-all duration-200 transform hover:-translate-y-2 group">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-xl shadow-lg">
+                      <Truck className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-black">LIVE</div>
+                  </div>
+                  <h3 className="font-black text-gray-900 text-xl mb-4 uppercase tracking-wide">Available Loads</h3>
+                  <p className="text-6xl font-black text-gray-900 mb-3">247</p>
+                  <p className="text-base text-gray-600 font-semibold">Active freight opportunities nationwide</p>
+                </Link>
 
-              <Link to="/my-bookings" className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-l-4 border-green-500">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-700">Active Bookings</h3>
-                  <CheckCircle className="w-8 h-8 text-green-500" />
-                </div>
-                <p className="text-4xl font-bold text-gray-900 mb-2">12</p>
-                <p className="text-sm text-gray-500">Loads in progress</p>
-              </Link>
+                <Link to="/my-bookings" className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-8 hover:shadow-2xl hover:border-green-500 transition-all duration-200 transform hover:-translate-y-2 group">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-xl shadow-lg">
+                      <CheckCircle className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-black">ACTIVE</div>
+                  </div>
+                  <h3 className="font-black text-gray-900 text-xl mb-4 uppercase tracking-wide">Active Bookings</h3>
+                  <p className="text-6xl font-black text-gray-900 mb-3">12</p>
+                  <p className="text-base text-gray-600 font-semibold">Loads currently in progress</p>
+                </Link>
 
-              <Link to="/post-load" className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border-l-4 border-indigo-500">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-700">Post New Load</h3>
-                  <TrendingUp className="w-8 h-8 text-indigo-500" />
-                </div>
-                <p className="text-2xl font-bold text-indigo-600 mb-2">Start Posting</p>
-                <p className="text-sm text-gray-500">Connect with carriers nationwide</p>
-              </Link>
+                <Link to="/post-load" className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl border-2 border-indigo-700 p-8 hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-2 hover:scale-105 group">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="bg-white/20 p-4 rounded-xl">
+                      <TrendingUp className="w-10 h-10 text-white" />
+                    </div>
+                  </div>
+                  <h3 className="font-black text-white text-xl mb-4 uppercase tracking-wide">Post New Load</h3>
+                  <p className="text-4xl font-black text-white mb-3">Start Posting</p>
+                  <p className="text-base text-indigo-100 font-semibold">Connect with carriers nationwide</p>
+                </Link>
+              </div>
             </div>
 
             {/* Document Expiration Alerts */}
@@ -236,20 +240,20 @@ export default function Dashboard() {
 function StatCard({ icon: Icon, label, value, color, link, trend, trendUp }) {
   return (
     <Link to={link} className="block group">
-      <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-        <div className="flex items-center justify-between mb-4">
-          <div className={`${color} p-3 rounded-lg shadow-lg`}>
-            <Icon className="w-7 h-7 text-white" />
+      <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-8 hover:shadow-2xl hover:border-blue-300 transition-all duration-200 transform hover:-translate-y-2">
+        <div className="flex items-center justify-between mb-6">
+          <div className={`${color} p-4 rounded-xl shadow-lg`}>
+            <Icon className="w-8 h-8 text-white" />
           </div>
           {trend && (
-            <span className={`text-sm font-semibold flex items-center gap-1 ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-              <TrendingUp className={`w-4 h-4 ${!trendUp && 'rotate-180'}`} />
+            <div className={`px-4 py-2 rounded-full text-sm font-black flex items-center gap-2 ${trendUp ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <TrendingUp className={`w-5 h-5 ${!trendUp && 'rotate-180'}`} />
               {trend}
-            </span>
+            </div>
           )}
         </div>
-        <p className="text-gray-600 text-sm font-medium mb-1">{label}</p>
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
+        <p className="text-gray-600 text-base font-bold uppercase tracking-wide mb-3">{label}</p>
+        <p className="text-5xl font-black text-gray-900">{value}</p>
       </div>
     </Link>
   )
