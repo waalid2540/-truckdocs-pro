@@ -37,11 +37,11 @@ export default function Documents() {
     try {
       for (const file of files) {
         const formData = new FormData()
-        formData.append('document', file)
+        formData.append('file', file)
         formData.append('document_type', 'other')
         formData.append('title', file.name)
 
-        await axios.post('/api/documents/upload', formData, {
+        await axios.post('/api/documents', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         })
       }
