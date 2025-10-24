@@ -69,12 +69,13 @@ app.use(helmet({
 // CORS - Allow requests from frontend only
 app.use(cors({
     origin: function(origin, callback) {
-        // Allow requests with no origin in development only (mobile apps, Postman, etc)
-        if (!origin && process.env.NODE_ENV !== 'production') {
+        // Allow requests with no origin (direct browser navigation, mobile apps, etc.)
+        // This is normal for visiting URLs directly or API testing tools
+        if (!origin) {
             return callback(null, true);
         }
 
-        // In production, FRONTEND_URL is required
+        // In production, FRONTEND_URL is required for actual frontend requests
         if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
             console.error('❌ SECURITY ERROR: FRONTEND_URL must be set in production');
             return callback(new Error('CORS configuration error'));
