@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { query, getClient } = require('../config/database');
 const { authenticate, requireSubscription } = require('../middleware/auth');
+const { logFinancialTransaction } = require('../utils/audit-logger');
 
 const router = express.Router();
 
@@ -144,6 +145,16 @@ router.post('/', authenticate, requireSubscription, async (req, res) => {
 
         await client.query('COMMIT');
 
+        // Log to audit trail
+        await logFinancialTransaction(
+            req.user.id,
+            'invoice_created',
+            'invoice',
+            invoice.id,
+            total_amount,
+            { invoice_number, client_name, status: 'unpaid' }
+        );
+
         // Get full invoice with items
         const fullInvoice = await query(
             `SELECT i.*,
@@ -244,9 +255,21 @@ router.put('/:id/status', authenticate, requireSubscription, async (req, res) =>
             });
         }
 
+        const invoice = result.rows[0];
+
+        // Log to audit trail
+        await logFinancialTransaction(
+            req.user.id,
+            status === 'paid' ? 'invoice_paid' : 'invoice_status_updated',
+            'invoice',
+            invoice.id,
+            invoice.total_amount,
+            { previous_status: invoice.status, new_status: status, payment_method }
+        );
+
         res.json({
             message: 'Invoice status updated',
-            invoice: result.rows[0]
+            invoice: invoice
         });
 
     } catch (error) {
@@ -261,16 +284,35 @@ router.put('/:id/status', authenticate, requireSubscription, async (req, res) =>
 // DELETE /api/invoices/:id - Delete invoice
 router.delete('/:id', authenticate, requireSubscription, async (req, res) => {
     try {
-        const result = await query(
-            'DELETE FROM invoices WHERE id = $1 AND user_id = $2 RETURNING id',
+        // Get invoice details before deletion for audit trail
+        const invoiceResult = await query(
+            'SELECT id, invoice_number, total_amount FROM invoices WHERE id = $1 AND user_id = $2',
             [req.params.id, req.user.id]
         );
 
-        if (result.rows.length === 0) {
+        if (invoiceResult.rows.length === 0) {
             return res.status(404).json({
                 error: 'Invoice not found'
             });
         }
+
+        const invoice = invoiceResult.rows[0];
+
+        // Delete invoice
+        await query(
+            'DELETE FROM invoices WHERE id = $1 AND user_id = $2',
+            [req.params.id, req.user.id]
+        );
+
+        // Log to audit trail
+        await logFinancialTransaction(
+            req.user.id,
+            'invoice_deleted',
+            'invoice',
+            invoice.id,
+            invoice.total_amount,
+            { invoice_number: invoice.invoice_number }
+        );
 
         res.json({
             message: 'Invoice deleted successfully'

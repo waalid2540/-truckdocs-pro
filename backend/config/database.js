@@ -16,9 +16,12 @@ pool.on('connect', () => {
     console.log('✅ Database connected successfully');
 });
 
+// Graceful error handling - log errors but don't crash server
 pool.on('error', (err) => {
     console.error('❌ Unexpected database error:', err);
-    process.exit(-1);
+    console.error('Database connection will be automatically retried by the pool');
+    // TODO: Send alert to monitoring service (e.g., Sentry, LogRocket)
+    // In production, you should implement proper error monitoring here
 });
 
 // Helper function to execute queries
@@ -63,8 +66,24 @@ const getClient = async () => {
     return client;
 };
 
+// Test database connection on startup
+const testConnection = async () => {
+    try {
+        const client = await pool.connect();
+        await client.query('SELECT NOW()');
+        client.release();
+        console.log('✅ Database connection test successful');
+        return true;
+    } catch (error) {
+        console.error('❌ Database connection test failed:', error.message);
+        console.error('Server will continue running but database operations will fail');
+        return false;
+    }
+};
+
 module.exports = {
     pool,
     query,
-    getClient
+    getClient,
+    testConnection
 };

@@ -2,6 +2,7 @@ const express = require('express');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
+const { logFinancialTransaction } = require('../utils/audit-logger');
 
 const router = express.Router();
 
@@ -65,8 +66,8 @@ router.post('/create-checkout', authenticate, async (req, res) => {
                     price_data: {
                         currency: 'usd',
                         product_data: {
-                            name: `TruckDocs Pro - ${tier.charAt(0).toUpperCase() + tier.slice(1)}`,
-                            description: `${billing_period === 'monthly' ? 'Monthly' : 'Yearly'} subscription`
+                            name: `FreightHub Pro - ${tier.charAt(0).toUpperCase() + tier.slice(1)}`,
+                            description: `${billing_period === 'monthly' ? 'Monthly' : 'Yearly'} subscription - Complete Trucking Command Center`
                         },
                         unit_amount: price,
                         recurring: {
@@ -156,11 +157,17 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 async function handleCheckoutCompleted(session) {
     const userId = session.metadata.user_id;
     const tier = session.metadata.tier;
+    const billingPeriod = session.metadata.billing_period;
     const subscriptionId = session.subscription;
+    const amountPaid = session.amount_total / 100; // Convert from cents
 
     // Update user subscription
     const subscriptionEndsAt = new Date();
-    subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
+    if (billingPeriod === 'yearly') {
+        subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
+    } else {
+        subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
+    }
 
     await query(
         `UPDATE users SET
@@ -173,7 +180,17 @@ async function handleCheckoutCompleted(session) {
         [tier, subscriptionId, subscriptionEndsAt, userId]
     );
 
-    console.log(`✅ Subscription activated for user ${userId}`);
+    // Log to financial audit trail
+    await logFinancialTransaction(
+        userId,
+        'subscription_activated',
+        'subscription',
+        subscriptionId,
+        amountPaid,
+        { tier, billing_period: billingPeriod, stripe_session_id: session.id }
+    );
+
+    console.log(`✅ Subscription activated for user ${userId} - ${tier} (${billingPeriod})`);
 }
 
 // Helper: Handle subscription update
@@ -214,13 +231,14 @@ async function handleSubscriptionDeleted(subscription) {
     const customerId = subscription.customer;
 
     const userResult = await query(
-        'SELECT id FROM users WHERE stripe_customer_id = $1',
+        'SELECT id, subscription_tier FROM users WHERE stripe_customer_id = $1',
         [customerId]
     );
 
     if (userResult.rows.length === 0) return;
 
     const userId = userResult.rows[0].id;
+    const tier = userResult.rows[0].subscription_tier;
 
     await query(
         `UPDATE users SET
@@ -228,6 +246,16 @@ async function handleSubscriptionDeleted(subscription) {
             updated_at = CURRENT_TIMESTAMP
          WHERE id = $1`,
         [userId]
+    );
+
+    // Log to financial audit trail
+    await logFinancialTransaction(
+        userId,
+        'subscription_cancelled',
+        'subscription',
+        subscription.id,
+        null,
+        { tier, cancellation_reason: subscription.cancellation_details?.reason || 'user_cancelled' }
     );
 
     console.log(`⚠️ Subscription cancelled for user ${userId}`);
@@ -239,13 +267,14 @@ async function handlePaymentSucceeded(invoice) {
     const amount = invoice.amount_paid / 100; // Convert from cents
 
     const userResult = await query(
-        'SELECT id FROM users WHERE stripe_customer_id = $1',
+        'SELECT id, subscription_tier FROM users WHERE stripe_customer_id = $1',
         [customerId]
     );
 
     if (userResult.rows.length === 0) return;
 
     const userId = userResult.rows[0].id;
+    const tier = userResult.rows[0].subscription_tier;
 
     // Record payment in subscription history
     await query(
@@ -255,7 +284,7 @@ async function handlePaymentSucceeded(invoice) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
             userId,
-            'solo', // Default, update based on metadata if needed
+            tier,
             amount,
             invoice.payment_intent,
             'succeeded',
@@ -264,25 +293,58 @@ async function handlePaymentSucceeded(invoice) {
         ]
     );
 
+    // Log to financial audit trail
+    await logFinancialTransaction(
+        userId,
+        'subscription_payment_succeeded',
+        'subscription',
+        invoice.subscription,
+        amount,
+        {
+            tier,
+            payment_intent: invoice.payment_intent,
+            invoice_id: invoice.id,
+            period_start: new Date(invoice.period_start * 1000),
+            period_end: new Date(invoice.period_end * 1000)
+        }
+    );
+
     console.log(`💰 Payment succeeded for user ${userId}: $${amount}`);
 }
 
 // Helper: Handle failed payment
 async function handlePaymentFailed(invoice) {
     const customerId = invoice.customer;
+    const amount = invoice.amount_due / 100; // Convert from cents
 
     const userResult = await query(
-        'SELECT id FROM users WHERE stripe_customer_id = $1',
+        'SELECT id, subscription_tier FROM users WHERE stripe_customer_id = $1',
         [customerId]
     );
 
     if (userResult.rows.length === 0) return;
 
     const userId = userResult.rows[0].id;
+    const tier = userResult.rows[0].subscription_tier;
+
+    // Log to financial audit trail
+    await logFinancialTransaction(
+        userId,
+        'subscription_payment_failed',
+        'subscription',
+        invoice.subscription,
+        amount,
+        {
+            tier,
+            invoice_id: invoice.id,
+            failure_reason: invoice.failure_message || 'Unknown',
+            attempt_count: invoice.attempt_count
+        }
+    );
 
     // TODO: Send email notification about failed payment
 
-    console.error(`❌ Payment failed for user ${userId}`);
+    console.error(`❌ Payment failed for user ${userId} - Amount: $${amount}`);
 }
 
 // GET /api/subscription/status - Get current subscription status
@@ -307,11 +369,44 @@ router.get('/status', authenticate, async (req, res) => {
     }
 });
 
+// POST /api/subscription/portal - Create customer portal session for managing subscription
+router.post('/portal', authenticate, async (req, res) => {
+    try {
+        const userResult = await query(
+            'SELECT stripe_customer_id FROM users WHERE id = $1',
+            [req.user.id]
+        );
+
+        if (!userResult.rows[0].stripe_customer_id) {
+            return res.status(400).json({
+                error: 'No Stripe customer found'
+            });
+        }
+
+        // Create customer portal session
+        const session = await stripe.billingPortal.sessions.create({
+            customer: userResult.rows[0].stripe_customer_id,
+            return_url: `${process.env.FRONTEND_URL}/settings`,
+        });
+
+        res.json({
+            portal_url: session.url
+        });
+
+    } catch (error) {
+        console.error('Customer portal error:', error);
+        res.status(500).json({
+            error: 'Failed to create portal session',
+            message: error.message
+        });
+    }
+});
+
 // POST /api/subscription/cancel - Cancel subscription
 router.post('/cancel', authenticate, async (req, res) => {
     try {
         const userResult = await query(
-            'SELECT stripe_subscription_id FROM users WHERE id = $1',
+            'SELECT stripe_subscription_id, subscription_tier FROM users WHERE id = $1',
             [req.user.id]
         );
 
@@ -321,10 +416,23 @@ router.post('/cancel', authenticate, async (req, res) => {
             });
         }
 
+        const subscriptionId = userResult.rows[0].stripe_subscription_id;
+        const tier = userResult.rows[0].subscription_tier;
+
         // Cancel subscription at period end (don't cancel immediately)
         await stripe.subscriptions.update(
-            userResult.rows[0].stripe_subscription_id,
+            subscriptionId,
             { cancel_at_period_end: true }
+        );
+
+        // Log to financial audit trail
+        await logFinancialTransaction(
+            req.user.id,
+            'subscription_cancel_scheduled',
+            'subscription',
+            subscriptionId,
+            null,
+            { tier, cancel_at_period_end: true }
         );
 
         res.json({

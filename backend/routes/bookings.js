@@ -1,6 +1,7 @@
 const express = require('express');
 const { query, getClient } = require('../config/database');
 const { authenticate, requireSubscription } = require('../middleware/auth');
+const { logFinancialTransaction } = require('../utils/audit-logger');
 
 const router = express.Router();
 
@@ -62,9 +63,21 @@ router.post('/', authenticate, requireSubscription, async (req, res) => {
 
         await client.query('COMMIT');
 
+        const booking = bookingResult.rows[0];
+
+        // Log to audit trail
+        await logFinancialTransaction(
+            req.user.id,
+            'booking_created',
+            'booking',
+            booking.id,
+            agreed_rate,
+            { load_id, status: 'pending', broker_id: load.broker_id }
+        );
+
         res.status(201).json({
             message: 'Load booked successfully! Waiting for broker confirmation.',
-            booking: bookingResult.rows[0]
+            booking: booking
         });
 
     } catch (error) {
@@ -102,9 +115,21 @@ router.put('/:id/confirm', authenticate, requireSubscription, async (req, res) =
             return res.status(404).json({ error: 'Booking not found or already confirmed' });
         }
 
+        const booking = result.rows[0];
+
+        // Log to audit trail
+        await logFinancialTransaction(
+            req.user.id,
+            'booking_confirmed',
+            'booking',
+            booking.id,
+            booking.agreed_rate,
+            { rate_confirmation_number, status: 'confirmed' }
+        );
+
         res.json({
             message: 'Booking confirmed!',
-            booking: result.rows[0]
+            booking: booking
         });
 
     } catch (error) {
@@ -259,15 +284,27 @@ router.put('/:id/complete', authenticate, requireSubscription, async (req, res) 
             return res.status(404).json({ error: 'Booking not found or not delivered' });
         }
 
+        const booking = result.rows[0];
+
         // Update load status
         await query(
             'UPDATE loads SET status = $1 WHERE id = $2',
-            ['completed', result.rows[0].load_id]
+            ['completed', booking.load_id]
+        );
+
+        // Log to audit trail
+        await logFinancialTransaction(
+            req.user.id,
+            'booking_completed',
+            'booking',
+            booking.id,
+            booking.agreed_rate,
+            { payment_date, invoice_id, status: 'completed', payment_status: 'paid' }
         );
 
         res.json({
             message: 'Booking completed!',
-            booking: result.rows[0]
+            booking: booking
         });
 
     } catch (error) {

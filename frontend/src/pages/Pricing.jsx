@@ -1,121 +1,245 @@
-import { Check, Sparkles } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Check, Sparkles, Truck, Zap, Shield } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Pricing() {
+  const navigate = useNavigate();
+  const [billingPeriod, setBillingPeriod] = useState('monthly'); // monthly or yearly
+  const [loading, setLoading] = useState(null);
+
+  const handleSubscribe = async (tier) => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    setLoading(tier);
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/subscription/create-checkout`,
+        { tier, billing_period: billingPeriod },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Redirect to Stripe Checkout
+      window.location.href = response.data.checkout_url;
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Failed to start checkout. Please try again.');
+      setLoading(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-white py-12 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">One Simple Price</h1>
-          <p className="text-blue-200 text-lg">Everything you need to manage your trucking business</p>
-          <div className="mt-4 inline-block bg-green-500 text-white px-4 py-2 rounded-full font-semibold">
-            7-Day Free Trial • Cancel Anytime
-          </div>
-        </div>
-
-        <div className="max-w-xl mx-auto">
-          <div className="bg-white rounded-xl shadow-2xl p-10 ring-4 ring-yellow-400">
-            <div className="text-center">
-              <span className="bg-yellow-400 text-yellow-900 text-sm font-bold px-4 py-2 rounded-full">
-                BEST VALUE
-              </span>
-              <h3 className="text-3xl font-bold mt-6">TruckDocs Pro</h3>
-              <p className="text-gray-600 mt-2">Complete document management for truck drivers</p>
-              <div className="mt-8">
-                <span className="text-5xl font-bold text-blue-600">$19.99</span>
-                <span className="text-gray-600 text-xl">/month</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">Billed monthly • Cancel anytime</p>
+          <div className="inline-flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-3 rounded-xl">
+              <Truck className="w-8 h-8 text-white" />
             </div>
+            <h1 className="text-5xl font-black text-gray-900">FreightHub Pro</h1>
+          </div>
+          <p className="text-2xl text-gray-600 font-semibold mb-4">Complete Trucking Command Center</p>
+          <p className="text-lg text-gray-500">Choose the plan that fits your business</p>
 
-            <ul className="mt-10 space-y-4">
-              {[
-                'AI Document Assistant (GPT-4)',
-                'OCR Receipt Scanner with auto-fill',
-                'Digital Signature + PDF Export',
-                'Unlimited IFTA Reports',
-                'Unlimited Invoices & Expenses',
-                'Unlimited Document Storage',
-                'Mobile & Desktop Access',
-                'Email Support',
-                'All Future Updates Included'
-              ].map((feature, index) => (
-                <li key={index} className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                    <Check className="w-4 h-4 text-green-600" />
-                  </div>
-                  <span className="text-gray-700">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              to="/register"
-              className="mt-10 block bg-blue-600 text-white text-center py-4 rounded-lg hover:bg-blue-700 font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+          {/* Billing Toggle */}
+          <div className="mt-8 inline-flex items-center bg-gray-100 rounded-full p-2">
+            <button
+              onClick={() => setBillingPeriod('monthly')}
+              className={`px-6 py-2 rounded-full font-bold transition-all ${
+                billingPeriod === 'monthly'
+                  ? 'bg-white text-gray-900 shadow-md'
+                  : 'text-gray-600'
+              }`}
             >
-              <Sparkles className="w-5 h-5" />
-              Start Your Free 7-Day Trial
-            </Link>
-
-            <p className="text-center text-sm text-gray-500 mt-4">
-              No credit card required for trial
-            </p>
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod('yearly')}
+              className={`px-6 py-2 rounded-full font-bold transition-all ${
+                billingPeriod === 'yearly'
+                  ? 'bg-white text-gray-900 shadow-md'
+                  : 'text-gray-600'
+              }`}
+            >
+              Yearly
+              <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">Save 17%</span>
+            </button>
           </div>
         </div>
 
-        <div className="text-center mt-12">
-          <Link to="/login" className="text-blue-200 hover:text-white">
-            Already have an account? Log in
+        {/* Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Solo Driver */}
+          <PricingCard
+            name="Solo Driver"
+            price={billingPeriod === 'monthly' ? 19 : 199}
+            period={billingPeriod}
+            description="Perfect for owner-operators"
+            features={[
+              'Find & Book Freight Loads',
+              'Digital Document Management',
+              'AI Document Assistant',
+              'OCR Receipt Scanner',
+              'Digital Signatures',
+              'Unlimited IFTA Reports',
+              'Unlimited Invoices',
+              'Email Support'
+            ]}
+            onSubscribe={() => handleSubscribe('solo')}
+            loading={loading === 'solo'}
+          />
+
+          {/* Professional (Most Popular) */}
+          <PricingCard
+            name="Professional"
+            price={billingPeriod === 'monthly' ? 29 : 299}
+            period={billingPeriod}
+            description="For growing operations"
+            features={[
+              'Everything in Solo, plus:',
+              'Post Your Own Loads',
+              'Broker Profile Dashboard',
+              'Load Analytics & Insights',
+              'Priority Email Support',
+              'Advanced Expense Tracking',
+              'Custom Invoice Branding',
+              'API Access'
+            ]}
+            popular
+            onSubscribe={() => handleSubscribe('professional')}
+            loading={loading === 'professional'}
+          />
+
+          {/* Fleet */}
+          <PricingCard
+            name="Fleet Manager"
+            price={billingPeriod === 'monthly' ? 49 : 499}
+            period={billingPeriod}
+            description="For fleet owners & carriers"
+            features={[
+              'Everything in Professional, plus:',
+              'Multi-User Access (up to 10)',
+              'Fleet Dashboard & Reports',
+              'Dedicated Account Manager',
+              'Priority Phone Support',
+              'Custom Integrations',
+              'White-Label Options',
+              'SLA Guarantee'
+            ]}
+            onSubscribe={() => handleSubscribe('fleet')}
+            loading={loading === 'fleet'}
+          />
+        </div>
+
+        {/* Free Trial Notice */}
+        <div className="text-center mt-12 bg-green-50 border-2 border-green-200 rounded-2xl p-8 max-w-2xl mx-auto">
+          <Sparkles className="w-12 h-12 text-green-600 mx-auto mb-4" />
+          <h3 className="text-2xl font-black text-gray-900 mb-2">Start Your 14-Day Free Trial</h3>
+          <p className="text-gray-600 mb-4">
+            No credit card required. Cancel anytime. Full access to all features.
+          </p>
+          <Link
+            to="/register"
+            className="inline-block bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+          >
+            Get Started Free
           </Link>
         </div>
 
-        {/* Testimonials */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { name: 'Mike Johnson', role: 'Owner-Operator', text: 'Saves me 5 hours every week on paperwork!' },
-            { name: 'Sarah Martinez', role: 'Fleet Owner', text: 'Best investment for my trucking business.' },
-            { name: 'David Lee', role: 'Independent Driver', text: 'The AI assistant is a game changer!' }
-          ].map((testimonial, index) => (
-            <div key={index} className="bg-white/10 backdrop-blur rounded-lg p-6">
-              <p className="text-white italic">"{testimonial.text}"</p>
-              <p className="text-blue-200 mt-4 font-semibold">{testimonial.name}</p>
-              <p className="text-blue-300 text-sm">{testimonial.role}</p>
-            </div>
-          ))}
+        {/* Trust Badges */}
+        <div className="mt-16 grid grid-cols-3 gap-8 max-w-3xl mx-auto">
+          <div className="text-center">
+            <Shield className="w-12 h-12 text-green-600 mx-auto mb-3" />
+            <h4 className="font-bold text-gray-900">Bank-Level Security</h4>
+            <p className="text-sm text-gray-600">256-bit encryption</p>
+          </div>
+          <div className="text-center">
+            <Zap className="w-12 h-12 text-green-600 mx-auto mb-3" />
+            <h4 className="font-bold text-gray-900">99.9% Uptime</h4>
+            <p className="text-sm text-gray-600">Always available</p>
+          </div>
+          <div className="text-center">
+            <Check className="w-12 h-12 text-green-600 mx-auto mb-3" />
+            <h4 className="font-bold text-gray-900">Cancel Anytime</h4>
+            <p className="text-sm text-gray-600">No contracts</p>
+          </div>
+        </div>
+
+        {/* Login Link */}
+        <div className="text-center mt-12">
+          <Link to="/login" className="text-gray-600 hover:text-gray-900 font-semibold">
+            Already have an account? Log in →
+          </Link>
         </div>
       </div>
     </div>
   )
 }
 
-function PricingCard({ name, price, description, features, popular }) {
+function PricingCard({ name, price, period, description, features, popular, onSubscribe, loading }) {
   return (
-    <div className={`bg-white rounded-lg shadow-xl p-8 ${popular ? 'ring-4 ring-yellow-400' : ''}`}>
+    <div className={`bg-white rounded-2xl shadow-2xl p-8 border-2 transition-all hover:shadow-3xl hover:-translate-y-2 ${
+      popular ? 'border-yellow-400 ring-4 ring-yellow-100' : 'border-gray-200'
+    }`}>
       {popular && (
-        <span className="bg-yellow-400 text-yellow-900 text-sm font-bold px-3 py-1 rounded-full">
-          MOST POPULAR
-        </span>
+        <div className="text-center mb-4">
+          <span className="bg-yellow-400 text-yellow-900 text-sm font-black px-4 py-2 rounded-full uppercase tracking-wide">
+            Most Popular
+          </span>
+        </div>
       )}
-      <h3 className="text-2xl font-bold mt-4">{name}</h3>
-      <p className="text-gray-600 mt-2">{description}</p>
-      <div className="mt-6">
-        <span className="text-4xl font-bold">${price}</span>
-        <span className="text-gray-600">/month</span>
+
+      <div className="text-center">
+        <h3 className="text-2xl font-black text-gray-900">{name}</h3>
+        <p className="text-gray-600 mt-2 font-semibold">{description}</p>
+
+        <div className="mt-6">
+          <span className="text-5xl font-black text-gray-900">${price}</span>
+          <span className="text-gray-600 text-lg">/{period === 'monthly' ? 'month' : 'year'}</span>
+        </div>
+
+        {period === 'yearly' && (
+          <p className="text-sm text-green-600 font-bold mt-2">
+            Save ${(price / 10 * 12) - price} per year
+          </p>
+        )}
       </div>
+
       <ul className="mt-8 space-y-4">
         {features.map((feature, index) => (
-          <li key={index} className="flex items-center gap-3">
-            <Check className="w-5 h-5 text-green-500" />
-            <span>{feature}</span>
+          <li key={index} className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+              <Check className="w-4 h-4 text-green-600" />
+            </div>
+            <span className="text-gray-700 font-medium">{feature}</span>
           </li>
         ))}
       </ul>
-      <Link
-        to="/register"
-        className="mt-8 block bg-blue-600 text-white text-center py-3 rounded-lg hover:bg-blue-700 font-medium"
+
+      <button
+        onClick={onSubscribe}
+        disabled={loading}
+        className={`mt-8 w-full py-4 rounded-xl font-black text-lg transition-all ${
+          popular
+            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-2xl transform hover:scale-105'
+            : 'bg-gray-900 text-white hover:bg-gray-800 hover:shadow-xl'
+        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        Get Started
-      </Link>
+        {loading ? 'Loading...' : 'Get Started'}
+      </button>
+
+      <p className="text-center text-sm text-gray-500 mt-4">
+        14-day free trial • No credit card required
+      </p>
     </div>
   )
 }
