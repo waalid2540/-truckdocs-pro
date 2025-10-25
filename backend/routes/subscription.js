@@ -8,18 +8,13 @@ const router = express.Router();
 
 // Pricing configuration (prices in cents)
 const PRICING = {
-    solo_monthly: 1900,      // $19/month
-    solo_yearly: 19900,      // $199/year
-    professional_monthly: 2900,  // $29/month
-    professional_yearly: 29900,  // $299/year
-    fleet_monthly: 4900,     // $49/month
-    fleet_yearly: 49900      // $499/year
+    pro_monthly: 1999,      // $19.99/month - Unlimited everything
 };
 
 // POST /api/subscription/create-checkout - Create Stripe checkout session
 router.post('/create-checkout', authenticate, async (req, res) => {
     try {
-        const { tier, billing_period } = req.body; // tier: solo, professional, fleet | billing_period: monthly, yearly
+        const { tier, billing_period } = req.body; // tier: pro | billing_period: monthly
 
         if (!tier || !billing_period) {
             return res.status(400).json({
@@ -32,7 +27,7 @@ router.post('/create-checkout', authenticate, async (req, res) => {
 
         if (!price) {
             return res.status(400).json({
-                error: 'Invalid tier or billing period'
+                error: 'Invalid tier or billing period. Only pro_monthly is available.'
             });
         }
 
