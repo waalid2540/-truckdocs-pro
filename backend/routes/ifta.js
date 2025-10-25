@@ -163,4 +163,168 @@ router.get('/quarters', authenticate, requireSubscription, async (req, res) => {
     }
 });
 
+// PUT /api/ifta/records/:id - Update an IFTA fuel record
+router.put('/records/:id', authenticate, requireSubscription, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            purchase_date,
+            state,
+            gallons,
+            cost,
+            vendor_name,
+            receipt_number,
+            miles_in_state
+        } = req.body;
+
+        // Check if record exists and belongs to user
+        const existingRecord = await query(
+            'SELECT id FROM ifta_records WHERE id = $1 AND user_id = $2',
+            [id, req.user.id]
+        );
+
+        if (existingRecord.rows.length === 0) {
+            return res.status(404).json({
+                error: 'IFTA record not found or you do not have permission to update it'
+            });
+        }
+
+        // Determine quarter if date is being updated
+        let quarter, year;
+        if (purchase_date) {
+            const date = new Date(purchase_date);
+            year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            quarter = `${year}-Q${Math.ceil(month / 3)}`;
+        }
+
+        // Calculate price per gallon
+        let price_per_gallon;
+        if (gallons && cost) {
+            price_per_gallon = cost / gallons;
+        }
+
+        // Build dynamic update query
+        const updates = [];
+        const values = [];
+        let paramCount = 1;
+
+        if (purchase_date) {
+            updates.push(`purchase_date = $${paramCount}`);
+            values.push(purchase_date);
+            paramCount++;
+            updates.push(`quarter = $${paramCount}`);
+            values.push(quarter);
+            paramCount++;
+            updates.push(`year = $${paramCount}`);
+            values.push(year);
+            paramCount++;
+        }
+        if (state) {
+            updates.push(`state = $${paramCount}`);
+            values.push(state);
+            paramCount++;
+        }
+        if (gallons !== undefined) {
+            updates.push(`gallons = $${paramCount}`);
+            values.push(gallons);
+            paramCount++;
+        }
+        if (cost !== undefined) {
+            updates.push(`cost = $${paramCount}`);
+            values.push(cost);
+            paramCount++;
+        }
+        if (price_per_gallon) {
+            updates.push(`price_per_gallon = $${paramCount}`);
+            values.push(price_per_gallon);
+            paramCount++;
+        }
+        if (vendor_name !== undefined) {
+            updates.push(`vendor_name = $${paramCount}`);
+            values.push(vendor_name);
+            paramCount++;
+        }
+        if (receipt_number !== undefined) {
+            updates.push(`receipt_number = $${paramCount}`);
+            values.push(receipt_number);
+            paramCount++;
+        }
+        if (miles_in_state !== undefined) {
+            updates.push(`miles_in_state = $${paramCount}`);
+            values.push(miles_in_state);
+            paramCount++;
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({
+                error: 'No fields to update'
+            });
+        }
+
+        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+        // Add id and user_id to values
+        values.push(id);
+        values.push(req.user.id);
+
+        const result = await query(
+            `UPDATE ifta_records
+             SET ${updates.join(', ')}
+             WHERE id = $${paramCount} AND user_id = $${paramCount + 1}
+             RETURNING *`,
+            values
+        );
+
+        res.json({
+            message: 'IFTA record updated successfully',
+            record: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Update IFTA record error:', error);
+        res.status(500).json({
+            error: 'Failed to update IFTA record',
+            message: error.message
+        });
+    }
+});
+
+// DELETE /api/ifta/records/:id - Delete an IFTA fuel record
+router.delete('/records/:id', authenticate, requireSubscription, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if record exists and belongs to user
+        const existingRecord = await query(
+            'SELECT id FROM ifta_records WHERE id = $1 AND user_id = $2',
+            [id, req.user.id]
+        );
+
+        if (existingRecord.rows.length === 0) {
+            return res.status(404).json({
+                error: 'IFTA record not found or you do not have permission to delete it'
+            });
+        }
+
+        // Delete the record
+        await query(
+            'DELETE FROM ifta_records WHERE id = $1 AND user_id = $2',
+            [id, req.user.id]
+        );
+
+        res.json({
+            message: 'IFTA record deleted successfully',
+            deleted_id: id
+        });
+
+    } catch (error) {
+        console.error('Delete IFTA record error:', error);
+        res.status(500).json({
+            error: 'Failed to delete IFTA record',
+            message: error.message
+        });
+    }
+});
+
 module.exports = router;
