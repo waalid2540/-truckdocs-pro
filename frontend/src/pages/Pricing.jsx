@@ -1,245 +1,291 @@
-import { Check, Sparkles, Truck, Zap, Shield } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { Link, useNavigate } from 'react-router-dom'
+import { CheckCircle, Truck, ArrowRight } from 'lucide-react'
+import axios from '../api/axios'
 
 export default function Pricing() {
-  const navigate = useNavigate();
-  const [billingPeriod, setBillingPeriod] = useState('monthly'); // monthly or yearly
-  const [loading, setLoading] = useState(null);
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
 
-  const handleSubscribe = async (tier) => {
-    const token = localStorage.getItem('token');
+  const handleSubscribe = async () => {
+    const token = localStorage.getItem('token')
 
     if (!token) {
-      navigate('/login');
-      return;
+      // Not logged in, redirect to register
+      navigate('/register')
+      return
     }
 
-    setLoading(tier);
+    setLoading(true)
 
     try {
       const response = await axios.post(
-        `${API_URL}/api/subscription/create-checkout`,
-        { tier, billing_period: billingPeriod },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+        '/api/subscription/create-checkout',
+        {
+          tier: 'pro',
+          billing_period: 'monthly'
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
 
       // Redirect to Stripe Checkout
-      window.location.href = response.data.checkout_url;
+      window.location.href = response.data.checkout_url
     } catch (error) {
-      console.error('Checkout error:', error);
-      alert('Failed to start checkout. Please try again.');
-      setLoading(null);
+      console.error('Checkout error:', error)
+      alert('Failed to start checkout. Please try again.')
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-white py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-3 rounded-xl">
-              <Truck className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <Link to="/" className="flex items-center gap-2">
+              <Truck className="w-8 h-8 text-blue-600" />
+              <span className="text-2xl font-bold text-gray-900">FreightHub Pro</span>
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link to="/login" className="text-gray-600 hover:text-gray-900 font-medium">
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium transition"
+              >
+                Start Free Trial
+              </Link>
             </div>
-            <h1 className="text-5xl font-black text-gray-900">FreightHub Pro</h1>
-          </div>
-          <p className="text-2xl text-gray-600 font-semibold mb-4">Complete Trucking Command Center</p>
-          <p className="text-lg text-gray-500">Choose the plan that fits your business</p>
-
-          {/* Billing Toggle */}
-          <div className="mt-8 inline-flex items-center bg-gray-100 rounded-full p-2">
-            <button
-              onClick={() => setBillingPeriod('monthly')}
-              className={`px-6 py-2 rounded-full font-bold transition-all ${
-                billingPeriod === 'monthly'
-                  ? 'bg-white text-gray-900 shadow-md'
-                  : 'text-gray-600'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingPeriod('yearly')}
-              className={`px-6 py-2 rounded-full font-bold transition-all ${
-                billingPeriod === 'yearly'
-                  ? 'bg-white text-gray-900 shadow-md'
-                  : 'text-gray-600'
-              }`}
-            >
-              Yearly
-              <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">Save 17%</span>
-            </button>
           </div>
         </div>
+      </header>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Solo Driver */}
-          <PricingCard
-            name="Solo Driver"
-            price={billingPeriod === 'monthly' ? 19 : 199}
-            period={billingPeriod}
-            description="Perfect for owner-operators"
-            features={[
-              'Find & Book Freight Loads',
-              'Digital Document Management',
-              'AI Document Assistant',
-              'OCR Receipt Scanner',
-              'Digital Signatures',
-              'Unlimited IFTA Reports',
-              'Unlimited Invoices',
-              'Email Support'
-            ]}
-            onSubscribe={() => handleSubscribe('solo')}
-            loading={loading === 'solo'}
-          />
+      {/* Pricing Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-extrabold text-gray-900 mb-4">
+              Simple, Transparent Pricing
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              One plan with unlimited everything. No hidden fees, no surprises. Cancel anytime.
+            </p>
+          </div>
 
-          {/* Professional (Most Popular) */}
-          <PricingCard
-            name="Professional"
-            price={billingPeriod === 'monthly' ? 29 : 299}
-            period={billingPeriod}
-            description="For growing operations"
-            features={[
-              'Everything in Solo, plus:',
-              'Post Your Own Loads',
-              'Broker Profile Dashboard',
-              'Load Analytics & Insights',
-              'Priority Email Support',
-              'Advanced Expense Tracking',
-              'Custom Invoice Branding',
-              'API Access'
-            ]}
-            popular
-            onSubscribe={() => handleSubscribe('professional')}
-            loading={loading === 'professional'}
-          />
+          {/* Pricing Card */}
+          <div className="max-w-lg mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-blue-600 transform hover:scale-105 transition">
+              {/* Badge */}
+              <div className="bg-blue-600 text-white text-center py-2 font-semibold">
+                MOST POPULAR
+              </div>
 
-          {/* Fleet */}
-          <PricingCard
-            name="Fleet Manager"
-            price={billingPeriod === 'monthly' ? 49 : 499}
-            period={billingPeriod}
-            description="For fleet owners & carriers"
-            features={[
-              'Everything in Professional, plus:',
-              'Multi-User Access (up to 10)',
-              'Fleet Dashboard & Reports',
-              'Dedicated Account Manager',
-              'Priority Phone Support',
-              'Custom Integrations',
-              'White-Label Options',
-              'SLA Guarantee'
-            ]}
-            onSubscribe={() => handleSubscribe('fleet')}
-            loading={loading === 'fleet'}
-          />
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8">
+                <h3 className="text-3xl font-bold text-white text-center mb-2">FreightHub Pro</h3>
+                <p className="text-blue-100 text-center mb-6">Everything you need to run your business</p>
+
+                <div className="text-center">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span className="text-6xl font-extrabold text-white">$19.99</span>
+                    <span className="text-blue-100 text-2xl">/month</span>
+                  </div>
+                  <p className="text-blue-100 mt-3 text-lg">Unlimited everything. Cancel anytime.</p>
+                </div>
+              </div>
+
+              {/* Features */}
+              <div className="px-8 py-10">
+                <div className="mb-8">
+                  <h4 className="font-bold text-lg text-gray-900 mb-4">What's Included:</h4>
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Unlimited Document Storage</p>
+                        <p className="text-sm text-gray-600">Upload unlimited receipts, invoices, and documents</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">OCR Receipt Scanning</p>
+                        <p className="text-sm text-gray-600">Automatically extract data from receipts</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Professional Invoicing</p>
+                        <p className="text-sm text-gray-600">Create unlimited invoices and track payments</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Expense Tracking</p>
+                        <p className="text-sm text-gray-600">Track every expense with automatic categorization</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">IFTA Reports</p>
+                        <p className="text-sm text-gray-600">Automatic fuel tax calculations and quarterly reports</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Load Board Access</p>
+                        <p className="text-sm text-gray-600">Find and book high-paying loads</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">AI Business Assistant</p>
+                        <p className="text-sm text-gray-600">Get instant answers to tax and regulation questions</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Digital Signatures</p>
+                        <p className="text-sm text-gray-600">Sign documents electronically</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">24/7 Customer Support</p>
+                        <p className="text-sm text-gray-600">Get help whenever you need it</p>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Mobile Access</p>
+                        <p className="text-sm text-gray-600">Manage your business from anywhere</p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+
+                <button
+                  onClick={handleSubscribe}
+                  disabled={loading}
+                  className="w-full bg-blue-600 text-white px-8 py-5 rounded-lg hover:bg-blue-700 font-bold text-lg shadow-lg hover:shadow-xl transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? 'Loading...' : (
+                    <>
+                      Start 7-Day Free Trial
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+
+                <div className="mt-6 space-y-2 text-center text-sm text-gray-600">
+                  <p className="flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    No credit card required
+                  </p>
+                  <p className="flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    7-day free trial with full access
+                  </p>
+                  <p className="flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    Cancel anytime - no contracts
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ */}
+          <div className="mt-20 max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-gray-900 mb-10">
+              Frequently Asked Questions
+            </h2>
+
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-xl shadow">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  What happens after the 7-day free trial?
+                </h3>
+                <p className="text-gray-600">
+                  After your 7-day free trial ends, you'll be charged $19.99/month to continue using FreightHub Pro.
+                  You can cancel anytime before the trial ends with no charge.
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  Is there really unlimited storage?
+                </h3>
+                <p className="text-gray-600">
+                  Yes! Upload as many documents, receipts, and invoices as you need. No limits on storage or number of uploads.
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  Can I cancel my subscription?
+                </h3>
+                <p className="text-gray-600">
+                  Absolutely! You can cancel your subscription anytime from your account settings. You'll have access until
+                  the end of your current billing period.
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  Do you offer refunds?
+                </h3>
+                <p className="text-gray-600">
+                  Yes! If you're not satisfied within the first 30 days, contact us for a full refund—no questions asked.
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  What payment methods do you accept?
+                </h3>
+                <p className="text-gray-600">
+                  We accept all major credit cards (Visa, Mastercard, American Express, Discover) through our secure
+                  payment processor Stripe.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Free Trial Notice */}
-        <div className="text-center mt-12 bg-green-50 border-2 border-green-200 rounded-2xl p-8 max-w-2xl mx-auto">
-          <Sparkles className="w-12 h-12 text-green-600 mx-auto mb-4" />
-          <h3 className="text-2xl font-black text-gray-900 mb-2">Start Your 14-Day Free Trial</h3>
-          <p className="text-gray-600 mb-4">
-            No credit card required. Cancel anytime. Full access to all features.
+      {/* Footer CTA */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Ready to get started?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Join 1,000+ drivers who trust FreightHub Pro
           </p>
-          <Link
-            to="/register"
-            className="inline-block bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:shadow-xl transition-all"
+          <button
+            onClick={() => navigate('/register')}
+            className="bg-white text-blue-600 px-10 py-4 rounded-lg hover:bg-gray-100 font-bold text-lg shadow-xl transition inline-flex items-center gap-2"
           >
-            Get Started Free
-          </Link>
+            Start Your Free Trial
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </div>
-
-        {/* Trust Badges */}
-        <div className="mt-16 grid grid-cols-3 gap-8 max-w-3xl mx-auto">
-          <div className="text-center">
-            <Shield className="w-12 h-12 text-green-600 mx-auto mb-3" />
-            <h4 className="font-bold text-gray-900">Bank-Level Security</h4>
-            <p className="text-sm text-gray-600">256-bit encryption</p>
-          </div>
-          <div className="text-center">
-            <Zap className="w-12 h-12 text-green-600 mx-auto mb-3" />
-            <h4 className="font-bold text-gray-900">99.9% Uptime</h4>
-            <p className="text-sm text-gray-600">Always available</p>
-          </div>
-          <div className="text-center">
-            <Check className="w-12 h-12 text-green-600 mx-auto mb-3" />
-            <h4 className="font-bold text-gray-900">Cancel Anytime</h4>
-            <p className="text-sm text-gray-600">No contracts</p>
-          </div>
-        </div>
-
-        {/* Login Link */}
-        <div className="text-center mt-12">
-          <Link to="/login" className="text-gray-600 hover:text-gray-900 font-semibold">
-            Already have an account? Log in →
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PricingCard({ name, price, period, description, features, popular, onSubscribe, loading }) {
-  return (
-    <div className={`bg-white rounded-2xl shadow-2xl p-8 border-2 transition-all hover:shadow-3xl hover:-translate-y-2 ${
-      popular ? 'border-yellow-400 ring-4 ring-yellow-100' : 'border-gray-200'
-    }`}>
-      {popular && (
-        <div className="text-center mb-4">
-          <span className="bg-yellow-400 text-yellow-900 text-sm font-black px-4 py-2 rounded-full uppercase tracking-wide">
-            Most Popular
-          </span>
-        </div>
-      )}
-
-      <div className="text-center">
-        <h3 className="text-2xl font-black text-gray-900">{name}</h3>
-        <p className="text-gray-600 mt-2 font-semibold">{description}</p>
-
-        <div className="mt-6">
-          <span className="text-5xl font-black text-gray-900">${price}</span>
-          <span className="text-gray-600 text-lg">/{period === 'monthly' ? 'month' : 'year'}</span>
-        </div>
-
-        {period === 'yearly' && (
-          <p className="text-sm text-green-600 font-bold mt-2">
-            Save ${(price / 10 * 12) - price} per year
-          </p>
-        )}
-      </div>
-
-      <ul className="mt-8 space-y-4">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-              <Check className="w-4 h-4 text-green-600" />
-            </div>
-            <span className="text-gray-700 font-medium">{feature}</span>
-          </li>
-        ))}
-      </ul>
-
-      <button
-        onClick={onSubscribe}
-        disabled={loading}
-        className={`mt-8 w-full py-4 rounded-xl font-black text-lg transition-all ${
-          popular
-            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-2xl transform hover:scale-105'
-            : 'bg-gray-900 text-white hover:bg-gray-800 hover:shadow-xl'
-        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-      >
-        {loading ? 'Loading...' : 'Get Started'}
-      </button>
-
-      <p className="text-center text-sm text-gray-500 mt-4">
-        14-day free trial • No credit card required
-      </p>
+      </section>
     </div>
   )
 }

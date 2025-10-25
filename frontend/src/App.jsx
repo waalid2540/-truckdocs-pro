@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import axios from './api/axios'
 
 // Import pages
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -29,6 +30,7 @@ function App() {
       <Router>
         <Routes>
           {/* Public routes */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/pricing" element={<Pricing />} />
@@ -48,11 +50,8 @@ function App() {
           <Route path="/post-load" element={<ProtectedRoute><PostLoad /></ProtectedRoute>} />
           <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
 
-          {/* Default route */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
           {/* Catch-all route for 404 */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

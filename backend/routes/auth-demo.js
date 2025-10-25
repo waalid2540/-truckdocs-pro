@@ -17,7 +17,7 @@ const users = [
         truck_number: 'T-001',
         subscription_status: 'trial',
         subscription_tier: 'solo',
-        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         created_at: new Date()
     }
 ];
@@ -44,9 +44,9 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        // Create trial end date (14 days from now)
+        // Create trial end date (7 days from now)
         const trial_ends_at = new Date();
-        trial_ends_at.setDate(trial_ends_at.getDate() + 14);
+        trial_ends_at.setDate(trial_ends_at.getDate() + 7);
 
         // Create new user
         const user = {

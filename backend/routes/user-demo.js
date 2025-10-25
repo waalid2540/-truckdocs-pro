@@ -48,7 +48,7 @@ router.get('/profile', async (req, res) => {
                 truck_number: 'T-001',
                 subscription_status: 'trial',
                 subscription_tier: 'solo',
-                trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+                trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                 created_at: new Date()
             }
         });

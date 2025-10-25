@@ -65,9 +65,9 @@ router.post('/register', registerValidation, async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const password_hash = await bcrypt.hash(password, salt);
 
-        // Create trial end date (14 days from now)
+        // Create trial end date (7 days from now)
         const trial_ends_at = new Date();
-        trial_ends_at.setDate(trial_ends_at.getDate() + 14);
+        trial_ends_at.setDate(trial_ends_at.getDate() + 7);
 
         // Insert new user
         const result = await query(
