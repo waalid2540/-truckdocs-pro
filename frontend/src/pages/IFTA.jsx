@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
-import { Fuel, Plus, Download, X, Trash2 } from 'lucide-react'
+import { Fuel, Plus, Download, X, Trash2, Camera } from 'lucide-react'
 import axios from '../api/axios'
 
 const US_STATES = [
@@ -26,6 +26,7 @@ export default function IFTA() {
   const [showModal, setShowModal] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [reportData, setReportData] = useState(null)
+  const [isScanning, setIsScanning] = useState(false)
   const [formData, setFormData] = useState({
     purchase_date: new Date().toISOString().split('T')[0],
     state: '',
@@ -96,6 +97,59 @@ export default function IFTA() {
     } catch (error) {
       console.error('Error generating report:', error)
       alert('Failed to generate report')
+    }
+  }
+
+  const handleScanReceipt = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    setIsScanning(true)
+    try {
+      const formDataObj = new FormData()
+      formDataObj.append('receiptImage', file)
+
+      const response = await axios.post('/api/ocr/scan-ifta', formDataObj, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      const { parsedData } = response.data
+
+      // Auto-fill form with extracted data
+      setFormData(prev => ({
+        ...prev,
+        gallons: parsedData.gallons || prev.gallons,
+        cost: parsedData.cost || prev.cost,
+        state: parsedData.state || prev.state,
+        vendor_name: parsedData.vendor_name || prev.vendor_name,
+        receipt_number: parsedData.receipt_number || prev.receipt_number,
+        purchase_date: parsedData.purchase_date ? new Date(parsedData.purchase_date).toISOString().split('T')[0] : prev.purchase_date
+      }))
+
+      alert('✅ Receipt scanned! Review the data and submit.')
+    } catch (error) {
+      console.error('Error scanning receipt:', error)
+      alert('Failed to scan receipt. Please try again or enter manually.')
+    } finally {
+      setIsScanning(false)
+    }
+  }
+
+  const handleDeleteRecord = async (recordId) => {
+    if (!confirm('Are you sure you want to delete this IFTA record?')) {
+      return
+    }
+
+    try {
+      await axios.delete(`/api/ifta/records/${recordId}`)
+      fetchRecords()
+      fetchQuarterStats()
+      alert('Record deleted successfully')
+    } catch (error) {
+      console.error('Error deleting record:', error)
+      alert('Failed to delete record')
     }
   }
 
@@ -182,6 +236,7 @@ export default function IFTA() {
                     <th className="text-left py-3 px-4">Cost</th>
                     <th className="text-left py-3 px-4">Per Gallon</th>
                     <th className="text-left py-3 px-4">Quarter</th>
+                    <th className="text-left py-3 px-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -206,6 +261,15 @@ export default function IFTA() {
                           {record.quarter}
                         </span>
                       </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => handleDeleteRecord(record.id)}
+                          className="text-red-600 hover:text-red-800 p-1"
+                          title="Delete record"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -227,6 +291,44 @@ export default function IFTA() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6">
+              {/* Scan Receipt Button */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border-2 border-dashed border-blue-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-blue-900 flex items-center gap-2">
+                      <Camera className="w-5 h-5" />
+                      Scan Fuel Receipt
+                    </h3>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Take a photo or upload your receipt to auto-fill the form
+                    </p>
+                  </div>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleScanReceipt}
+                      className="hidden"
+                      disabled={isScanning}
+                    />
+                    <div className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                      {isScanning ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                          Scanning...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-4 h-4" />
+                          Scan Receipt
+                        </>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Purchase Date *</label>
