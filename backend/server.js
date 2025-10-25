@@ -163,6 +163,7 @@ app.use('/', require('./routes/reset-db'));
 app.use('/', require('./routes/add-expiration-fields'));
 app.use('/', require('./routes/load-board-migration'));
 app.use('/', require('./routes/security-migration'));
+app.use('/', require('./routes/reset-user'));
 
 // These routes work in both modes
 app.use('/api/ai', require('./routes/ai-assistant'));
