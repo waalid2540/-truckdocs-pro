@@ -1,8 +1,208 @@
 const express = require('express');
+const multer = require('multer');
 const { query } = require('../config/database');
 const { authenticate, requireSubscription } = require('../middleware/auth');
+const { uploadToS3 } = require('../utils/fileUpload');
+const Tesseract = require('tesseract.js');
 
 const router = express.Router();
+
+// Configure multer for receipt image uploads
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'), false);
+        }
+    }
+});
+
+// POST /api/ifta/scan-and-save - Scan IFTA receipt, save to S3, and create document
+router.post('/scan-and-save', authenticate, requireSubscription, upload.single('receiptImage'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                error: 'No receipt image provided'
+            });
+        }
+
+        console.log('Processing IFTA receipt with OCR and S3 upload...');
+
+        // 1. Perform OCR on the receipt
+        const ocrResult = await Tesseract.recognize(
+            req.file.buffer,
+            'eng',
+            {
+                logger: info => console.log(info)
+            }
+        );
+
+        const extractedText = ocrResult.data.text;
+
+        // 2. Parse IFTA data from OCR text
+        const parsedData = parseIFTAReceipt(extractedText);
+
+        // 3. Upload image to S3
+        const fileUrl = await uploadToS3(req.file, req.user.id);
+
+        // 4. Create document record in database
+        const documentResult = await query(
+            `INSERT INTO documents (
+                user_id, document_type, title, file_url, file_name,
+                file_size, file_type, ocr_text, category, amount,
+                transaction_date, state, vendor_name
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING *`,
+            [
+                req.user.id,
+                'ifta',
+                `IFTA Receipt - ${parsedData.vendor_name || 'Fuel Purchase'}`,
+                fileUrl,
+                req.file.originalname,
+                req.file.size,
+                req.file.mimetype,
+                extractedText,
+                'fuel',
+                parsedData.cost,
+                parsedData.purchase_date,
+                parsedData.state,
+                parsedData.vendor_name
+            ]
+        );
+
+        const document = documentResult.rows[0];
+
+        // 5. Log activity
+        await query(
+            'INSERT INTO activity_log (user_id, action, entity_type, entity_id) VALUES ($1, $2, $3, $4)',
+            [req.user.id, 'upload_document', 'document', document.id]
+        );
+
+        res.json({
+            success: true,
+            parsedData,
+            document,
+            extractedText,
+            confidence: ocrResult.data.confidence
+        });
+
+    } catch (error) {
+        console.error('IFTA scan and save error:', error);
+        res.status(500).json({
+            error: 'Failed to process receipt',
+            message: error.message
+        });
+    }
+});
+
+// Helper function to parse IFTA receipt (reused from ocr-scanner.js logic)
+function parseIFTAReceipt(text) {
+    const parsedData = {
+        gallons: null,
+        cost: null,
+        price_per_gallon: null,
+        purchase_date: null,
+        state: null,
+        vendor_name: null,
+        receipt_number: null
+    };
+
+    const upperText = text.toUpperCase();
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
+
+    // Extract GALLONS
+    const gallonPatterns = [
+        /(?:GALLONS?|GAL|VOLUME)[\s:]*(\d+\.\d{1,3})/i,
+        /(\d+\.\d{1,3})\s*(?:GAL|GALLONS?)/i,
+        /FUEL\s+(?:SALE|QTY|QUANTITY)[\s:]*(\d+\.\d{1,3})/i
+    ];
+    for (const pattern of gallonPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            const gallons = parseFloat(match[1]);
+            if (gallons > 0 && gallons < 500) {
+                parsedData.gallons = gallons;
+                break;
+            }
+        }
+    }
+
+    // Extract COST
+    const costPatterns = [
+        /(?:TOTAL|FUEL\s+TOTAL|AMOUNT)[\s:$]*(\d+\.\d{2})/i,
+        /\$\s*(\d+\.\d{2})/
+    ];
+    for (const pattern of costPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            const cost = parseFloat(match[1]);
+            if (cost > 0 && cost < 2000) {
+                parsedData.cost = cost;
+                break;
+            }
+        }
+    }
+
+    // Calculate price per gallon
+    if (parsedData.gallons && parsedData.cost) {
+        parsedData.price_per_gallon = parseFloat((parsedData.cost / parsedData.gallons).toFixed(3));
+    }
+
+    // Extract DATE
+    const datePatterns = [
+        /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
+        /(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{1,2},?\s+\d{4}/i
+    ];
+    for (const pattern of datePatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            parsedData.purchase_date = match[0];
+            break;
+        }
+    }
+
+    // Extract STATE
+    const statePattern = /\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b/;
+    const stateMatch = upperText.match(statePattern);
+    if (stateMatch) {
+        parsedData.state = stateMatch[1];
+    }
+
+    // Extract VENDOR
+    const knownVendors = [
+        "PILOT", "FLYING J", "LOVE'S", "TA", "PETRO", "SHELL", "EXXON",
+        "CHEVRON", "BP", "MOBIL", "SUNOCO", "SPEEDWAY", "CIRCLE K"
+    ];
+    for (const vendor of knownVendors) {
+        if (upperText.includes(vendor)) {
+            parsedData.vendor_name = vendor;
+            break;
+        }
+    }
+    if (!parsedData.vendor_name && lines.length > 0) {
+        parsedData.vendor_name = lines[0].trim();
+    }
+
+    // Extract RECEIPT NUMBER
+    const receiptPatterns = [
+        /(?:RECEIPT|TRANS|TRANSACTION)[\s#:]*(\d+)/i,
+        /#(\d{4,})/
+    ];
+    for (const pattern of receiptPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            parsedData.receipt_number = match[1];
+            break;
+        }
+    }
+
+    return parsedData;
+}
 
 // GET /api/ifta/records - Get all IFTA fuel records
 router.get('/records', authenticate, requireSubscription, async (req, res) => {
@@ -58,7 +258,8 @@ router.post('/records', authenticate, requireSubscription, async (req, res) => {
             cost,
             vendor_name,
             receipt_number,
-            miles_in_state
+            miles_in_state,
+            document_id // Optional - links to scanned receipt in documents table
         } = req.body;
 
         if (!purchase_date || !state || !gallons || !cost) {
@@ -77,11 +278,11 @@ router.post('/records', authenticate, requireSubscription, async (req, res) => {
 
         const result = await query(
             `INSERT INTO ifta_records (
-                user_id, quarter, year, state, purchase_date, gallons,
+                user_id, document_id, quarter, year, state, purchase_date, gallons,
                 cost, price_per_gallon, vendor_name, receipt_number, miles_in_state
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *`,
-            [req.user.id, quarter, year, state, purchase_date, gallons,
+            [req.user.id, document_id || null, quarter, year, state, purchase_date, gallons,
              cost, price_per_gallon, vendor_name, receipt_number, miles_in_state]
         );
 

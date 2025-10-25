@@ -109,15 +109,15 @@ export default function IFTA() {
       const formDataObj = new FormData()
       formDataObj.append('receiptImage', file)
 
-      const response = await axios.post('/api/ocr/scan-ifta', formDataObj, {
+      const response = await axios.post('/api/ifta/scan-and-save', formDataObj, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
 
-      const { parsedData } = response.data
+      const { parsedData, document } = response.data
 
-      // Auto-fill form with extracted data
+      // Auto-fill form with extracted data AND save document ID
       setFormData(prev => ({
         ...prev,
         gallons: parsedData.gallons || prev.gallons,
@@ -125,10 +125,11 @@ export default function IFTA() {
         state: parsedData.state || prev.state,
         vendor_name: parsedData.vendor_name || prev.vendor_name,
         receipt_number: parsedData.receipt_number || prev.receipt_number,
-        purchase_date: parsedData.purchase_date ? new Date(parsedData.purchase_date).toISOString().split('T')[0] : prev.purchase_date
+        purchase_date: parsedData.purchase_date ? new Date(parsedData.purchase_date).toISOString().split('T')[0] : prev.purchase_date,
+        document_id: document.id // Save document ID to link receipt to IFTA record
       }))
 
-      alert('✅ Receipt scanned! Review the data and submit.')
+      alert('✅ Receipt scanned and saved! Review the data and submit.')
     } catch (error) {
       console.error('Error scanning receipt:', error)
       alert('Failed to scan receipt. Please try again or enter manually.')
