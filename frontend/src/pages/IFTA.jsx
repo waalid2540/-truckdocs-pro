@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
-import { Fuel, Plus, Download, X, Trash2, Camera } from 'lucide-react'
+import { Fuel, Plus, Download, X, Trash2, Camera, FileText, Eye } from 'lucide-react'
 import axios from '../api/axios'
 
 const US_STATES = [
@@ -27,6 +27,8 @@ export default function IFTA() {
   const [showReport, setShowReport] = useState(false)
   const [reportData, setReportData] = useState(null)
   const [isScanning, setIsScanning] = useState(false)
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false)
+  const [selectedReceipt, setSelectedReceipt] = useState(null)
   const [formData, setFormData] = useState({
     purchase_date: new Date().toISOString().split('T')[0],
     state: '',
@@ -154,6 +156,18 @@ export default function IFTA() {
     }
   }
 
+  const handleViewReceipt = (record) => {
+    if (record.receipt_url) {
+      setSelectedReceipt({
+        url: record.receipt_url,
+        filename: record.receipt_filename || 'Receipt',
+        vendor: record.vendor_name,
+        date: record.purchase_date
+      })
+      setShowReceiptPreview(true)
+    }
+  }
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -263,13 +277,26 @@ export default function IFTA() {
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleDeleteRecord(record.id)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                          title="Delete record"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {record.receipt_url ? (
+                            <button
+                              onClick={() => handleViewReceipt(record)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                              title="View receipt"
+                            >
+                              <FileText className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <div className="w-6 h-6" title="No receipt"></div>
+                          )}
+                          <button
+                            onClick={() => handleDeleteRecord(record.id)}
+                            className="text-red-600 hover:text-red-800 p-1"
+                            title="Delete record"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -516,6 +543,65 @@ export default function IFTA() {
                 <button
                   onClick={() => setShowReport(false)}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Preview Modal */}
+      {showReceiptPreview && selectedReceipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
+              <div>
+                <h2 className="text-2xl font-bold">Receipt Preview</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedReceipt.vendor} • {formatDate(selectedReceipt.date)}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowReceiptPreview(false)
+                  setSelectedReceipt(null)
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="bg-gray-100 rounded-lg overflow-hidden">
+                <img
+                  src={selectedReceipt.url}
+                  alt={selectedReceipt.filename}
+                  className="w-full h-auto"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-receipt.png'
+                    e.target.alt = 'Receipt not available'
+                  }}
+                />
+              </div>
+
+              <div className="mt-6 flex items-center justify-between">
+                <a
+                  href={selectedReceipt.url}
+                  download={selectedReceipt.filename}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Receipt
+                </a>
+                <button
+                  onClick={() => {
+                    setShowReceiptPreview(false)
+                    setSelectedReceipt(null)
+                  }}
+                  className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                 >
                   Close
                 </button>

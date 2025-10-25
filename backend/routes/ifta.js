@@ -204,34 +204,43 @@ function parseIFTAReceipt(text) {
     return parsedData;
 }
 
-// GET /api/ifta/records - Get all IFTA fuel records
+// GET /api/ifta/records - Get all IFTA fuel records with receipt links
 router.get('/records', authenticate, requireSubscription, async (req, res) => {
     try {
         const { quarter, year, state } = req.query;
 
-        let queryText = 'SELECT * FROM ifta_records WHERE user_id = $1';
+        // JOIN with documents table to get receipt file_url
+        let queryText = `
+            SELECT
+                ifta_records.*,
+                documents.file_url as receipt_url,
+                documents.file_name as receipt_filename
+            FROM ifta_records
+            LEFT JOIN documents ON ifta_records.document_id = documents.id
+            WHERE ifta_records.user_id = $1
+        `;
         const queryParams = [req.user.id];
         let paramCount = 1;
 
         if (quarter) {
             paramCount++;
-            queryText += ` AND quarter = $${paramCount}`;
+            queryText += ` AND ifta_records.quarter = $${paramCount}`;
             queryParams.push(quarter);
         }
 
         if (year) {
             paramCount++;
-            queryText += ` AND year = $${paramCount}`;
+            queryText += ` AND ifta_records.year = $${paramCount}`;
             queryParams.push(parseInt(year));
         }
 
         if (state) {
             paramCount++;
-            queryText += ` AND state = $${paramCount}`;
+            queryText += ` AND ifta_records.state = $${paramCount}`;
             queryParams.push(state);
         }
 
-        queryText += ' ORDER BY purchase_date DESC';
+        queryText += ' ORDER BY ifta_records.purchase_date DESC';
 
         const result = await query(queryText, queryParams);
 
