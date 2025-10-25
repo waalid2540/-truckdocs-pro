@@ -29,7 +29,7 @@ router.get('/setup-security-enhancements', async (req, res) => {
             await query(`
                 CREATE TABLE IF NOT EXISTS security_audit_log (
                     id SERIAL PRIMARY KEY,
-                    user_id INTEGER,
+                    user_id UUID,
                     event_type VARCHAR(50) NOT NULL,
                     ip_address VARCHAR(45),
                     user_agent TEXT,
@@ -57,10 +57,10 @@ router.get('/setup-security-enhancements', async (req, res) => {
             await query(`
                 CREATE TABLE IF NOT EXISTS financial_audit_trail (
                     id SERIAL PRIMARY KEY,
-                    user_id INTEGER,
+                    user_id UUID,
                     transaction_type VARCHAR(50) NOT NULL,
                     entity_type VARCHAR(50) NOT NULL,
-                    entity_id INTEGER NOT NULL,
+                    entity_id VARCHAR(255) NOT NULL,
                     amount DECIMAL(10, 2),
                     details JSONB,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
