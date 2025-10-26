@@ -88,6 +88,39 @@ export default function Documents() {
     }
   }
 
+  const handleViewDocument = async (doc) => {
+    try {
+      // Fetch signed URL from backend for secure access
+      const response = await axios.get(`/api/documents/${doc.id}/signed-url`)
+      const { signedUrl } = response.data
+
+      // Open in new tab
+      window.open(signedUrl, '_blank', 'noopener,noreferrer')
+    } catch (error) {
+      console.error('Failed to load document:', error)
+      alert('Failed to load document. Please try again.')
+    }
+  }
+
+  const handleDownloadDocument = async (doc) => {
+    try {
+      // Fetch signed URL from backend for secure access
+      const response = await axios.get(`/api/documents/${doc.id}/signed-url`)
+      const { signedUrl, filename } = response.data
+
+      // Create temporary link and trigger download
+      const link = document.createElement('a')
+      link.href = signedUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error('Failed to download document:', error)
+      alert('Failed to download document. Please try again.')
+    }
+  }
+
   const filteredDocuments = documents.filter(doc =>
     doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     doc.document_type?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -191,25 +224,22 @@ export default function Documents() {
                       <PenTool className="w-5 h-5" />
                     </button>
                     {doc.file_url && (
-                      <a
-                        href={doc.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handleViewDocument(doc)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded"
                         title="View"
                       >
                         <Eye className="w-5 h-5" />
-                      </a>
+                      </button>
                     )}
                     {doc.file_url && (
-                      <a
-                        href={doc.file_url}
-                        download
+                      <button
+                        onClick={() => handleDownloadDocument(doc)}
                         className="p-2 text-green-600 hover:bg-green-50 rounded"
                         title="Download"
                       >
                         <Download className="w-5 h-5" />
-                      </a>
+                      </button>
                     )}
                     <button
                       onClick={() => handleDelete(doc.id)}

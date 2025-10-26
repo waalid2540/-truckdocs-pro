@@ -198,6 +198,41 @@ router.get('/:id', authenticate, requireSubscription, async (req, res) => {
     }
 });
 
+// GET /api/documents/:id/signed-url - Get signed URL for secure file access
+router.get('/:id/signed-url', authenticate, requireSubscription, async (req, res) => {
+    try {
+        const result = await query(
+            'SELECT id, file_url, file_name FROM documents WHERE id = $1 AND user_id = $2',
+            [req.params.id, req.user.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                error: 'Document not found'
+            });
+        }
+
+        const document = result.rows[0];
+
+        // Generate signed URL (valid for 1 hour)
+        const { getSignedUrl } = require('../utils/fileUpload');
+        const signedUrl = await getSignedUrl(document.file_url);
+
+        res.json({
+            signedUrl,
+            filename: document.file_name,
+            expiresIn: 3600 // 1 hour in seconds
+        });
+
+    } catch (error) {
+        console.error('Get signed URL error:', error);
+        res.status(500).json({
+            error: 'Failed to generate signed URL',
+            message: error.message
+        });
+    }
+});
+
 // PUT /api/documents/:id - Update document
 router.put('/:id', authenticate, requireSubscription, async (req, res) => {
     try {

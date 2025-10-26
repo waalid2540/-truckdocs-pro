@@ -156,15 +156,24 @@ export default function IFTA() {
     }
   }
 
-  const handleViewReceipt = (record) => {
+  const handleViewReceipt = async (record) => {
     if (record.receipt_url) {
-      setSelectedReceipt({
-        url: record.receipt_url,
-        filename: record.receipt_filename || 'Receipt',
-        vendor: record.vendor_name,
-        date: record.purchase_date
-      })
-      setShowReceiptPreview(true)
+      try {
+        // Fetch signed URL from backend for secure access
+        const response = await axios.get(`/api/ifta/records/${record.id}/receipt-url`)
+        const { signedUrl } = response.data
+
+        setSelectedReceipt({
+          url: signedUrl, // Use signed URL instead of direct S3 URL
+          filename: record.receipt_filename || 'Receipt',
+          vendor: record.vendor_name,
+          date: record.purchase_date
+        })
+        setShowReceiptPreview(true)
+      } catch (error) {
+        console.error('Error fetching receipt URL:', error)
+        alert('Failed to load receipt. Please try again.')
+      }
     }
   }
 

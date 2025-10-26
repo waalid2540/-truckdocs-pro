@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { query } = require('../config/database');
 const { authenticate, requireSubscription } = require('../middleware/auth');
-const { uploadToS3 } = require('../utils/fileUpload');
+const { uploadToS3, getSignedUrl } = require('../utils/fileUpload');
 const Tesseract = require('tesseract.js');
 
 const router = express.Router();
@@ -252,6 +252,53 @@ router.get('/records', authenticate, requireSubscription, async (req, res) => {
         console.error('Get IFTA records error:', error);
         res.status(500).json({
             error: 'Failed to get IFTA records',
+            message: error.message
+        });
+    }
+});
+
+// GET /api/ifta/records/:id/receipt-url - Get signed URL for IFTA receipt
+router.get('/records/:id/receipt-url', authenticate, requireSubscription, async (req, res) => {
+    try {
+        // Get IFTA record with document info
+        const result = await query(
+            `SELECT
+                ifta_records.id,
+                documents.file_url,
+                documents.file_name
+             FROM ifta_records
+             LEFT JOIN documents ON ifta_records.document_id = documents.id
+             WHERE ifta_records.id = $1 AND ifta_records.user_id = $2`,
+            [req.params.id, req.user.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                error: 'IFTA record not found or you do not have permission to access it'
+            });
+        }
+
+        const record = result.rows[0];
+
+        if (!record.file_url) {
+            return res.status(404).json({
+                error: 'No receipt attached to this IFTA record'
+            });
+        }
+
+        // Generate signed URL (valid for 1 hour)
+        const signedUrl = await getSignedUrl(record.file_url);
+
+        res.json({
+            signedUrl,
+            filename: record.file_name,
+            expiresIn: 3600 // 1 hour in seconds
+        });
+
+    } catch (error) {
+        console.error('Get IFTA receipt URL error:', error);
+        res.status(500).json({
+            error: 'Failed to generate signed URL for receipt',
             message: error.message
         });
     }
