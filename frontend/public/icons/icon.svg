@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#2563eb" rx="80"/>
+
+  <!-- Truck Icon -->
+  <g transform="translate(80, 140)">
+    <!-- Truck body -->
+    <rect x="0" y="80" width="200" height="120" fill="#ffffff" rx="10"/>
+
+    <!-- Truck cabin -->
+    <path d="M 200 80 L 200 200 L 280 200 L 280 140 L 240 80 Z" fill="#ffffff"/>
+    <polygon points="210,100 220,120 240,120 240,100" fill="#2563eb"/>
+
+    <!-- Wheels -->
+    <circle cx="60" cy="220" r="30" fill="#1e40af"/>
+    <circle cx="60" cy="220" r="15" fill="#ffffff"/>
+
+    <circle cx="240" cy="220" r="30" fill="#1e40af"/>
+    <circle cx="240" cy="220" r="15" fill="#ffffff"/>
+
+    <!-- Details -->
+    <rect x="20" y="100" width="60" height="40" fill="#93c5fd" rx="5"/>
+    <line x1="50" y1="100" x2="50" y2="140" stroke="#2563eb" stroke-width="2"/>
+
+    <!-- Road lines -->
+    <rect x="0" y="260" width="60" height="8" fill="#ffffff" opacity="0.6"/>
+    <rect x="80" y="260" width="60" height="8" fill="#ffffff" opacity="0.6"/>
+    <rect x="160" y="260" width="60" height="8" fill="#ffffff" opacity="0.6"/>
+    <rect x="240" y="260" width="60" height="8" fill="#ffffff" opacity="0.6"/>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList, ChevronDown } from 'lucide-react'
+import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList, ChevronDown, Menu, X } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
 export default function Layout({ children }) {
@@ -8,6 +8,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [openDropdown, setOpenDropdown] = useState(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -36,23 +37,24 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-      {/* TOP NAVIGATION BAR - HORIZONTAL */}
+      {/* TOP NAVIGATION BAR - RESPONSIVE */}
       <header className="bg-white border-b-4 border-green-600 shadow-xl sticky top-0 z-50">
-        <div className="max-w-full px-8 py-4">
+        <div className="max-w-full px-4 sm:px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Logo Section - LEFT */}
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-3 rounded-xl shadow-lg">
-                <Truck className="w-8 h-8 text-white" />
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-2 sm:p-3 rounded-xl shadow-lg">
+                <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <div>
-                <h1 className="text-2xl font-black text-gray-900">FreightHub Pro</h1>
+              <div className="hidden sm:block">
+                <h1 className="text-xl sm:text-2xl font-black text-gray-900">FreightHub Pro</h1>
                 <p className="text-xs font-bold text-green-600 uppercase tracking-wider">Complete Trucking Command Center</p>
               </div>
+              <h1 className="sm:hidden text-lg font-black text-gray-900">FreightHub</h1>
             </div>
 
-            {/* HORIZONTAL NAVIGATION - CENTER WITH DROPDOWNS */}
-            <nav className="flex items-center gap-4">
+            {/* DESKTOP NAVIGATION - HIDDEN ON MOBILE */}
+            <nav className="hidden lg:flex items-center gap-4">
               <NavLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={isActive('/dashboard')} />
 
               {/* LOAD BOARD DROPDOWN */}
@@ -86,12 +88,10 @@ export default function Layout({ children }) {
               />
             </nav>
 
-            {/* USER INFO - RIGHT */}
-            <div className="flex items-center gap-4">
+            {/* USER INFO - DESKTOP */}
+            <div className="hidden lg:flex items-center gap-4">
               <NavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
-
               <div className="h-8 w-px bg-gray-300"></div>
-
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-xs text-gray-600 font-semibold">Logged in as</p>
@@ -106,8 +106,70 @@ export default function Layout({ children }) {
                 </button>
               </div>
             </div>
+
+            {/* MOBILE MENU BUTTON */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* MOBILE MENU - FULL SCREEN OVERLAY */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden fixed inset-0 top-[72px] bg-white z-40 overflow-y-auto">
+            <nav className="p-4 space-y-2">
+              {/* Dashboard */}
+              <MobileNavLink
+                to="/dashboard"
+                icon={LayoutDashboard}
+                label="Dashboard"
+                active={isActive('/dashboard')}
+                onClick={() => setMobileMenuOpen(false)}
+              />
+
+              {/* Load Board Section */}
+              <div className="border-t pt-2 mt-2">
+                <p className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Load Board</p>
+                <MobileNavLink to="/load-board" icon={Package} label="Find Loads" active={isActive('/load-board')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/post-load" icon={PlusSquare} label="Post Load" active={isActive('/post-load')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/my-bookings" icon={ClipboardList} label="My Bookings" active={isActive('/my-bookings')} onClick={() => setMobileMenuOpen(false)} />
+              </div>
+
+              {/* Documents Section */}
+              <div className="border-t pt-2 mt-2">
+                <p className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Documents & Tools</p>
+                <MobileNavLink to="/ai-assistant" icon={Sparkles} label="AI Assistant" active={isActive('/ai-assistant')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/receipt-scanner" icon={Scan} label="Receipt Scanner" active={isActive('/receipt-scanner')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/signature" icon={PenTool} label="Digital Signature" active={isActive('/signature')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/documents" icon={FileText} label="Documents" active={isActive('/documents')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/invoices" icon={DollarSign} label="Invoices" active={isActive('/invoices')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/expenses" icon={Receipt} label="Expenses" active={isActive('/expenses')} onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/ifta" icon={Fuel} label="IFTA" active={isActive('/ifta')} onClick={() => setMobileMenuOpen(false)} />
+              </div>
+
+              {/* Settings & Logout */}
+              <div className="border-t pt-2 mt-2">
+                <MobileNavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} onClick={() => setMobileMenuOpen(false)} />
+                <button
+                  onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-semibold">Sign Out</span>
+                </button>
+              </div>
+
+              {/* User Info */}
+              <div className="border-t pt-4 mt-4 px-4">
+                <p className="text-xs text-gray-600 font-semibold">Logged in as</p>
+                <p className="font-bold text-gray-900">{user?.full_name || user?.email}</p>
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Main Content - FULL WIDTH */}
@@ -178,5 +240,24 @@ function DropdownMenu({ label, icon: Icon, isOpen, onToggle, items }) {
         </div>
       )}
     </div>
+  )
+}
+
+function MobileNavLink({ to, icon: Icon, label, active, onClick }) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+        active
+          ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600'
+          : 'text-gray-700 hover:bg-gray-50'
+      }`}
+    >
+      <Icon className={`w-5 h-5 ${active ? 'text-blue-600' : 'text-gray-600'}`} />
+      <span className={`font-semibold ${active ? 'text-blue-600' : 'text-gray-900'}`}>
+        {label}
+      </span>
+    </Link>
   )
 }

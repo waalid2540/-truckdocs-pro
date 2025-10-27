@@ -21,6 +21,9 @@ import LoadBoard from './pages/LoadBoard'
 import PostLoad from './pages/PostLoad'
 import MyBookings from './pages/MyBookings'
 
+// Components
+import InstallPrompt from './components/InstallPrompt'
+
 // Context for auth
 import { AuthProvider } from './context/AuthContext'
 
@@ -28,6 +31,9 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        {/* PWA Install Prompt */}
+        <InstallPrompt />
+
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
