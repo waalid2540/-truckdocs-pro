@@ -51,11 +51,12 @@ router.post('/create-checkout', authenticate, async (req, res) => {
             );
         }
 
-        // Create checkout session
+        // Create checkout session with 7-day free trial
         const session = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
             mode: 'subscription',
             payment_method_types: ['card'],
+            payment_method_collection: 'always', // Require payment method even for trial
             line_items: [
                 {
                     price_data: {
@@ -72,7 +73,15 @@ router.post('/create-checkout', authenticate, async (req, res) => {
                     quantity: 1
                 }
             ],
-            success_url: `${process.env.FRONTEND_URL}/dashboard?subscription=success`,
+            subscription_data: {
+                trial_period_days: 7, // 7-day free trial
+                trial_settings: {
+                    end_behavior: {
+                        missing_payment_method: 'cancel' // Cancel if no payment method
+                    }
+                }
+            },
+            success_url: `${process.env.FRONTEND_URL}/dashboard?subscription=success&trial=true`,
             cancel_url: `${process.env.FRONTEND_URL}/pricing?subscription=cancelled`,
             metadata: {
                 user_id: req.user.id,
@@ -154,38 +163,67 @@ async function handleCheckoutCompleted(session) {
     const tier = session.metadata.tier;
     const billingPeriod = session.metadata.billing_period;
     const subscriptionId = session.subscription;
-    const amountPaid = session.amount_total / 100; // Convert from cents
+    const amountPaid = session.amount_total / 100; // Convert from cents (will be 0 for trial)
 
-    // Update user subscription
-    const subscriptionEndsAt = new Date();
-    if (billingPeriod === 'yearly') {
-        subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
+    // Get full subscription details from Stripe to check trial status
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    const isTrialing = subscription.status === 'trialing';
+    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
+
+    // Update user subscription with trial information
+    const subscriptionEndsAt = new Date(subscription.current_period_end * 1000);
+
+    if (isTrialing) {
+        // Set trial_ends_at and status to 'trialing'
+        await query(
+            `UPDATE users SET
+                subscription_status = 'trialing',
+                subscription_tier = $1,
+                stripe_subscription_id = $2,
+                trial_ends_at = $3,
+                subscription_ends_at = $4,
+                updated_at = CURRENT_TIMESTAMP
+             WHERE id = $5`,
+            [tier, subscriptionId, trialEnd, subscriptionEndsAt, userId]
+        );
+
+        // Log trial start to financial audit trail
+        await logFinancialTransaction(
+            userId,
+            'trial_started',
+            'subscription',
+            subscriptionId,
+            0,
+            { tier, billing_period: billingPeriod, trial_ends_at: trialEnd, stripe_session_id: session.id }
+        );
+
+        console.log(`🎁 Trial started for user ${userId} - ${tier} (${billingPeriod}) - Ends: ${trialEnd}`);
     } else {
-        subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + 1);
+        // Regular subscription (no trial)
+        await query(
+            `UPDATE users SET
+                subscription_status = 'active',
+                subscription_tier = $1,
+                stripe_subscription_id = $2,
+                subscription_ends_at = $3,
+                updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4`,
+            [tier, subscriptionId, subscriptionEndsAt, userId]
+        );
+
+        // Log to financial audit trail
+        await logFinancialTransaction(
+            userId,
+            'subscription_activated',
+            'subscription',
+            subscriptionId,
+            amountPaid,
+            { tier, billing_period: billingPeriod, stripe_session_id: session.id }
+        );
+
+        console.log(`✅ Subscription activated for user ${userId} - ${tier} (${billingPeriod})`);
     }
-
-    await query(
-        `UPDATE users SET
-            subscription_status = 'active',
-            subscription_tier = $1,
-            stripe_subscription_id = $2,
-            subscription_ends_at = $3,
-            updated_at = CURRENT_TIMESTAMP
-         WHERE id = $4`,
-        [tier, subscriptionId, subscriptionEndsAt, userId]
-    );
-
-    // Log to financial audit trail
-    await logFinancialTransaction(
-        userId,
-        'subscription_activated',
-        'subscription',
-        subscriptionId,
-        amountPaid,
-        { tier, billing_period: billingPeriod, stripe_session_id: session.id }
-    );
-
-    console.log(`✅ Subscription activated for user ${userId} - ${tier} (${billingPeriod})`);
 }
 
 // Helper: Handle subscription update
@@ -194,7 +232,7 @@ async function handleSubscriptionUpdated(subscription) {
 
     // Get user by Stripe customer ID
     const userResult = await query(
-        'SELECT id FROM users WHERE stripe_customer_id = $1',
+        'SELECT id, subscription_status FROM users WHERE stripe_customer_id = $1',
         [customerId]
     );
 
@@ -204,21 +242,45 @@ async function handleSubscriptionUpdated(subscription) {
     }
 
     const userId = userResult.rows[0].id;
+    const previousStatus = userResult.rows[0].subscription_status;
 
     // Update subscription status
-    const status = subscription.status === 'active' ? 'active' : subscription.status;
+    const status = subscription.status === 'trialing' ? 'trialing' :
+                   subscription.status === 'active' ? 'active' : subscription.status;
     const endsAt = new Date(subscription.current_period_end * 1000);
+    const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
+
+    // Check if transitioning from trial to active (trial ended, first payment processed)
+    const trialEnded = previousStatus === 'trialing' && status === 'active';
 
     await query(
         `UPDATE users SET
             subscription_status = $1,
             subscription_ends_at = $2,
+            trial_ends_at = $3,
             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $3`,
-        [status, endsAt, userId]
+         WHERE id = $4`,
+        [status, endsAt, trialEnd, userId]
     );
 
-    console.log(`✅ Subscription updated for user ${userId}`);
+    if (trialEnded) {
+        // Log trial conversion to financial audit trail
+        await logFinancialTransaction(
+            userId,
+            'trial_converted',
+            'subscription',
+            subscription.id,
+            null,
+            {
+                previous_status: previousStatus,
+                new_status: status,
+                subscription_id: subscription.id
+            }
+        );
+        console.log(`🎉 Trial converted to paid subscription for user ${userId}`);
+    } else {
+        console.log(`✅ Subscription updated for user ${userId} - Status: ${status}`);
+    }
 }
 
 // Helper: Handle subscription deletion

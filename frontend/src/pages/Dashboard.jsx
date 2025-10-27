@@ -8,12 +8,14 @@ import DocumentAlerts from '../components/DocumentAlerts'
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [reminders, setReminders] = useState([])
+  const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchDashboard()
     fetchReminders()
+    fetchSubscription()
   }, [])
 
   const fetchDashboard = async () => {
@@ -47,6 +49,15 @@ export default function Dashboard() {
     }
   }
 
+  const fetchSubscription = async () => {
+    try {
+      const response = await axios.get('/api/subscription/status')
+      setSubscription(response.data.subscription)
+    } catch (error) {
+      console.error('Failed to fetch subscription:', error)
+    }
+  }
+
   const handleCompleteReminder = async (id) => {
     try {
       await axios.put(`/api/reminders/${id}/complete`)
@@ -57,6 +68,22 @@ export default function Dashboard() {
     }
   }
 
+  // Calculate trial days remaining
+  const getTrialInfo = () => {
+    if (!subscription || subscription.subscription_status !== 'trialing') return null
+
+    const trialEnd = new Date(subscription.trial_ends_at)
+    const now = new Date()
+    const daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
+
+    return {
+      daysRemaining,
+      trialEnd: trialEnd.toLocaleDateString()
+    }
+  }
+
+  const trialInfo = getTrialInfo()
+
   return (
     <Layout>
       <div className="p-12 bg-white min-h-screen">
@@ -65,6 +92,42 @@ export default function Dashboard() {
           <h1 className="text-5xl font-black text-gray-900 mb-3">Dashboard</h1>
           <p className="text-xl text-gray-600 font-semibold">Complete overview of your trucking business</p>
         </div>
+
+        {/* Trial Status Banner */}
+        {trialInfo && (
+          <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-2xl p-6 text-white border-4 border-blue-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <Calendar className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">
+                    {trialInfo.daysRemaining === 1
+                      ? '1 Day Left in Your Free Trial!'
+                      : `${trialInfo.daysRemaining} Days Left in Your Free Trial!`}
+                  </h3>
+                  <p className="text-blue-100">
+                    Your trial ends on <strong>{trialInfo.trialEnd}</strong>.
+                    You'll be automatically charged $19.99/month after that.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/settings"
+                className="bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                Manage Subscription
+              </Link>
+            </div>
+            <div className="mt-4 bg-white/10 rounded-lg p-4">
+              <p className="text-sm text-blue-100">
+                <strong>Cancel anytime before {trialInfo.trialEnd}</strong> to avoid being charged.
+                No questions asked, no fees.
+              </p>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-20">

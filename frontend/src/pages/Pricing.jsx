@@ -96,7 +96,8 @@ export default function Pricing() {
                     <span className="text-6xl font-extrabold text-white">$19.99</span>
                     <span className="text-blue-100 text-2xl">/month</span>
                   </div>
-                  <p className="text-blue-100 mt-3 text-lg">Unlimited everything. Cancel anytime.</p>
+                  <p className="text-blue-100 mt-3 text-lg font-semibold">7 Days FREE, then $19.99/month</p>
+                  <p className="text-blue-100 mt-1 text-sm">Cancel anytime before trial ends - no charge</p>
                 </div>
               </div>
 
@@ -193,16 +194,20 @@ export default function Pricing() {
 
                 <div className="mt-6 space-y-2 text-center text-sm text-gray-600">
                   <p className="flex items-center justify-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    No credit card required
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    <span className="font-semibold">Start with 7 days FREE</span>
                   </p>
                   <p className="flex items-center justify-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    7-day free trial with full access
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    Credit card required (charged after trial)
                   </p>
                   <p className="flex items-center justify-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    Cancel anytime - no contracts
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    Cancel anytime before day 7 - no charge
+                  </p>
+                  <p className="flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    Auto-renews at $19.99/month after trial
                   </p>
                 </div>
               </div>
@@ -221,8 +226,20 @@ export default function Pricing() {
                   What happens after the 7-day free trial?
                 </h3>
                 <p className="text-gray-600">
-                  After your 7-day free trial ends, you'll be charged $19.99/month to continue using FreightHub Pro.
-                  You can cancel anytime before the trial ends with no charge.
+                  Your credit card will be <strong>automatically charged $19.99</strong> when your 7-day trial ends.
+                  If you cancel before day 7, you won't be charged anything. After that, you'll continue to be charged
+                  $19.99 every month until you cancel.
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow border-2 border-blue-200 bg-blue-50">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  Do I need a credit card to start the trial?
+                </h3>
+                <p className="text-gray-600">
+                  <strong>Yes, a credit card is required</strong> to start your free trial. This ensures seamless access
+                  after your trial ends. You won't be charged during the 7-day trial period, and you can cancel anytime
+                  before the trial ends with no charge.
                 </p>
               </div>
 
