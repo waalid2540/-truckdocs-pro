@@ -56,8 +56,8 @@ export default function Register() {
               <Truck className="w-12 h-12 text-blue-600" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white">TruckDocs Pro</h1>
-          <p className="text-blue-200 mt-2">Start Your 14-Day Free Trial</p>
+          <h1 className="text-3xl font-bold text-white">FreightHub Pro</h1>
+          <p className="text-blue-200 mt-2">Start Your 7-Day Free Trial</p>
         </div>
 
         {/* Register Form */}
@@ -184,15 +184,23 @@ export default function Register() {
         </div>
 
         {/* Trial Features */}
-        <div className="mt-6 bg-blue-800 bg-opacity-50 backdrop-blur-sm rounded-lg p-6">
-          <h3 className="text-white font-bold mb-3">14-Day Free Trial Includes:</h3>
+        <div className="mt-6 bg-blue-800 bg-opacity-50 backdrop-blur-sm rounded-lg p-6 border-2 border-yellow-400">
+          <h3 className="text-white font-bold mb-3">7-Day Free Trial Includes:</h3>
           <ul className="text-blue-100 space-y-2">
             <li>✓ Unlimited document uploads</li>
             <li>✓ IFTA tracking & reports</li>
             <li>✓ Professional invoice generator</li>
             <li>✓ Expense tracking</li>
-            <li>✓ No credit card required</li>
+            <li>✓ AI-powered OCR receipt scanning</li>
           </ul>
+          <div className="mt-4 pt-4 border-t border-blue-600">
+            <p className="text-yellow-300 font-semibold text-sm">
+              ⚠️ Credit card required • Auto-charges $19.99/month after 7 days
+            </p>
+            <p className="text-blue-200 text-xs mt-1">
+              Cancel before day 7 to avoid charges
+            </p>
+          </div>
         </div>
       </div>
     </div>

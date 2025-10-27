@@ -64,18 +64,18 @@ export default function Landing() {
             </button>
           </div>
 
-          <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
+          <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span>No credit card required</span>
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold">7 days FREE</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span>Cancel anytime</span>
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              <span>Then $19.99/month</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span>7-day free trial</span>
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              <span>Credit card required</span>
             </div>
           </div>
         </div>
@@ -230,9 +230,14 @@ export default function Landing() {
                   <ArrowRight className="w-5 h-5" />
                 </button>
 
-                <p className="text-center text-sm text-gray-500 mt-4">
-                  No credit card required • Cancel anytime
-                </p>
+                <div className="text-center mt-4 space-y-1">
+                  <p className="text-sm font-semibold text-gray-700">
+                    Credit card required • Auto-charges after 7 days
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Cancel before day 7 to avoid charges
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -304,13 +309,13 @@ export default function Landing() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow">
+            <div className="bg-white p-6 rounded-xl shadow border-2 border-blue-200 bg-blue-50">
               <h3 className="font-bold text-lg text-gray-900 mb-2">
                 How does the 7-day free trial work?
               </h3>
               <p className="text-gray-600">
-                Start using FreightHub Pro immediately with full access to all features. No credit card required.
-                After 7 days, you can choose to subscribe for $19.99/month or continue with limited features.
+                <strong>Credit card required to start your trial.</strong> You get immediate access to all features for 7 days completely free.
+                After 7 days, your card will be <strong>automatically charged $19.99/month</strong>. Cancel before day 7 to avoid any charges.
               </p>
             </div>
 
@@ -371,9 +376,14 @@ export default function Landing() {
             Start Your 7-Day Free Trial
             <ArrowRight className="w-6 h-6" />
           </button>
-          <p className="text-blue-100 mt-6">
-            No credit card required • Cancel anytime • Full access during trial
-          </p>
+          <div className="mt-6 space-y-2">
+            <p className="text-white font-semibold text-lg">
+              7 Days FREE • Then $19.99/month
+            </p>
+            <p className="text-blue-200 text-sm">
+              Credit card required • Auto-charges after trial • Cancel before day 7 to avoid charges
+            </p>
+          </div>
         </div>
       </section>
 

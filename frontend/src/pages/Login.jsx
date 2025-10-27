@@ -46,8 +46,8 @@ export default function Login() {
               <Truck className="w-12 h-12 text-blue-600" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white">TruckDocs Pro</h1>
-          <p className="text-blue-200 mt-2">Document Management for Truck Drivers</p>
+          <h1 className="text-3xl font-bold text-white">FreightHub Pro</h1>
+          <p className="text-blue-200 mt-2">Complete Trucking Command Center</p>
         </div>
 
         {/* Login Form */}
@@ -111,9 +111,12 @@ export default function Login() {
         </div>
 
         {/* Trial Info */}
-        <div className="mt-6 bg-blue-800 bg-opacity-50 backdrop-blur-sm rounded-lg p-4 text-center">
+        <div className="mt-6 bg-blue-800 bg-opacity-50 backdrop-blur-sm rounded-lg p-4 text-center border-2 border-yellow-400">
           <p className="text-blue-100">
-            New users get a <span className="font-bold text-white">14-day free trial</span>
+            New users get a <span className="font-bold text-white">7-day free trial</span>
+          </p>
+          <p className="text-yellow-300 text-sm mt-2 font-semibold">
+            Credit card required • $19.99/month after trial
           </p>
         </div>
       </div>
