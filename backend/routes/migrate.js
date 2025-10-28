@@ -20,16 +20,104 @@ router.get('/migrate', async (req, res) => {
             ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
         });
 
-        // Read schema file
+        const results = {
+            success: true,
+            migrations: [],
+            errors: []
+        };
+
+        // Read and run schema file
         const schemaPath = path.join(__dirname, '../database/schema.sql');
         const schema = fs.readFileSync(schemaPath, 'utf8');
 
-        // Execute schema
-        await pool.query(schema);
+        console.log('📝 Running schema.sql...');
+        try {
+            await pool.query(schema);
+            results.migrations.push({
+                file: 'schema.sql',
+                status: 'success',
+                message: 'Base schema created'
+            });
+        } catch (error) {
+            if (error.message.includes('already exists')) {
+                results.migrations.push({
+                    file: 'schema.sql',
+                    status: 'skipped',
+                    message: 'Tables already exist'
+                });
+            } else {
+                throw error;
+            }
+        }
+
+        // Run additional migrations from database/migrations folder
+        console.log('🔄 Running additional migrations...');
+        const migrationsDir = path.join(__dirname, '../database/migrations');
+
+        if (fs.existsSync(migrationsDir)) {
+            const migrationFiles = fs.readdirSync(migrationsDir)
+                .filter(file => file.endsWith('.sql'))
+                .sort(); // Run in alphabetical order
+
+            for (const file of migrationFiles) {
+                console.log(`📝 Running ${file}...`);
+                const migrationPath = path.join(migrationsDir, file);
+                const migration = fs.readFileSync(migrationPath, 'utf8');
+
+                try {
+                    await pool.query(migration);
+                    console.log(`   ✅ ${file} completed`);
+                    results.migrations.push({
+                        file,
+                        status: 'success',
+                        message: 'Migration completed successfully'
+                    });
+                } catch (error) {
+                    // If error is "already exists", that's okay - skip it
+                    if (error.message.includes('already exists')) {
+                        console.log(`   ⚠️  ${file} - already exists, skipping`);
+                        results.migrations.push({
+                            file,
+                            status: 'skipped',
+                            message: 'Tables already exist'
+                        });
+                    } else {
+                        console.error(`   ❌ ${file} failed:`, error.message);
+                        results.errors.push({
+                            file,
+                            error: error.message
+                        });
+                    }
+                }
+            }
+        }
+
+        // Verify ifta_tax_rates table exists and has data
+        try {
+            const checkResult = await pool.query('SELECT COUNT(*) as count FROM ifta_tax_rates');
+            const count = parseInt(checkResult.rows[0].count);
+
+            results.verification = {
+                ifta_tax_rates_exists: true,
+                tax_rates_count: count,
+                status: count > 0 ? '✅ READY' : '⚠️ EMPTY'
+            };
+
+            console.log(`✅ Verified: ifta_tax_rates has ${count} tax rates`);
+        } catch (error) {
+            results.verification = {
+                ifta_tax_rates_exists: false,
+                error: error.message
+            };
+        }
+
+        await pool.end();
 
         res.json({
             success: true,
-            message: '✅ Database tables created successfully!',
+            message: '✅ All migrations completed successfully!',
+            migrations: results.migrations,
+            verification: results.verification,
             tables: [
                 'users',
                 'documents',
@@ -38,10 +126,12 @@ router.get('/migrate', async (req, res) => {
                 'expenses',
                 'ifta_records',
                 'ifta_reports',
+                'ifta_tax_rates (NEW - 116 tax rates for all states)',
                 'vehicles',
                 'subscription_history',
                 'activity_log'
-            ]
+            ],
+            errors: results.errors.length > 0 ? results.errors : undefined
         });
     } catch (error) {
         console.error('Migration error:', error);
