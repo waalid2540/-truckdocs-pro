@@ -40,13 +40,19 @@ router.get('/migrate', async (req, res) => {
             });
         } catch (error) {
             if (error.message.includes('already exists')) {
+                console.log('   ⚠️  Base tables already exist, skipping schema.sql');
                 results.migrations.push({
                     file: 'schema.sql',
                     status: 'skipped',
-                    message: 'Tables already exist'
+                    message: 'Tables already exist (this is fine)'
                 });
             } else {
-                throw error;
+                console.error('   ⚠️  Schema error (continuing anyway):', error.message);
+                results.migrations.push({
+                    file: 'schema.sql',
+                    status: 'warning',
+                    message: 'Error occurred but continuing: ' + error.message
+                });
             }
         }
 
