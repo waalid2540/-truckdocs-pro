@@ -102,6 +102,35 @@ export default function IFTA() {
     }
   }
 
+  const handleDownloadPDF = async () => {
+    if (!reportData) return
+
+    const downloadBtn = document.querySelector('[data-pdf-download]')
+    if (downloadBtn) {
+      downloadBtn.disabled = true
+      downloadBtn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div> Generating PDF...'
+    }
+
+    try {
+      const response = await axios.post(`/api/ifta/reports/${reportData.quarter}/generate-pdf`, {
+        fuel_type: reportData.fuel_type || 'diesel'
+      })
+
+      // Open PDF in new tab
+      window.open(response.data.pdf_url, '_blank')
+
+      alert('✅ IFTA PDF report generated! Opening in new tab...')
+    } catch (error) {
+      console.error('Error downloading PDF:', error)
+      alert('Failed to generate PDF report. Please try again.')
+    } finally {
+      if (downloadBtn) {
+        downloadBtn.disabled = false
+        downloadBtn.innerHTML = '<svg class="w-5 h-5" ...></svg> Download Official IFTA PDF Report'
+      }
+    }
+  }
+
   const handleScanReceipt = async (event) => {
     const file = event.target.files[0]
     if (!file) return
@@ -482,76 +511,201 @@ export default function IFTA() {
 
       {/* Report Modal */}
       {showReport && reportData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-6xl w-full my-8">
+            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
               <h2 className="text-2xl font-bold">IFTA Report - {reportData.quarter}</h2>
               <button onClick={() => setShowReport(false)} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="p-6">
-              {/* Summary */}
-              <div className="bg-purple-50 rounded-lg p-6 mb-6">
+            <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+              {/* Summary with Tax Info */}
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 mb-6 text-white">
                 <h3 className="text-lg font-bold mb-4">Quarter Summary</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <p className="text-sm text-gray-600">Total Gallons</p>
-                    <p className="text-2xl font-bold text-purple-600">
+                    <p className="text-sm text-purple-200">Total Gallons</p>
+                    <p className="text-2xl font-bold">
                       {parseFloat(reportData.summary.total_gallons || 0).toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Cost</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {formatCurrency(reportData.summary.total_cost)}
+                    <p className="text-sm text-purple-200">Total Miles</p>
+                    <p className="text-2xl font-bold">
+                      {parseFloat(reportData.summary.total_miles || 0).toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Purchases</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {reportData.summary.total_purchases}
+                    <p className="text-sm text-purple-200">Average MPG</p>
+                    <p className="text-2xl font-bold">
+                      {reportData.summary.average_mpg || 0}
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-200">Total Cost</p>
+                    <p className="text-2xl font-bold">
+                      {formatCurrency(reportData.summary.total_cost)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t border-purple-400 pt-4 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-purple-200">Total Tax Paid</p>
+                      <p className="text-xl font-bold">{formatCurrency(reportData.summary.total_tax_paid)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-purple-200">Total Tax Owed</p>
+                      <p className="text-xl font-bold">{formatCurrency(reportData.summary.total_tax_owed)}</p>
+                    </div>
+                    <div className="bg-white bg-opacity-20 rounded-lg p-3">
+                      <p className="text-sm text-purple-100">Net Tax {reportData.summary.net_tax_due >= 0 ? 'DUE' : 'CREDIT'}</p>
+                      <p className={`text-2xl font-extrabold ${reportData.summary.net_tax_due >= 0 ? 'text-yellow-300' : 'text-green-300'}`}>
+                        {formatCurrency(Math.abs(reportData.summary.net_tax_due))}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* By State */}
+              {/* Warnings */}
+              {reportData.warnings && reportData.warnings.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold mb-3">Warnings & Recommendations</h3>
+                  {reportData.warnings.map((warning, index) => (
+                    <div
+                      key={index}
+                      className={`p-4 rounded-lg mb-3 ${
+                        warning.severity === 'high' ? 'bg-red-50 border-l-4 border-red-500' :
+                        warning.severity === 'medium' ? 'bg-yellow-50 border-l-4 border-yellow-500' :
+                        'bg-blue-50 border-l-4 border-blue-500'
+                      }`}
+                    >
+                      <p className={`font-semibold ${
+                        warning.severity === 'high' ? 'text-red-800' :
+                        warning.severity === 'medium' ? 'text-yellow-800' :
+                        'text-blue-800'
+                      }`}>
+                        {warning.severity === 'high' ? '⚠️' : warning.severity === 'medium' ? '⚡' : 'ℹ️'} {warning.message}
+                      </p>
+                      <p className="text-sm text-gray-700 mt-1">
+                        <strong>Action:</strong> {warning.action}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* By State with Tax Details */}
               <div>
-                <h3 className="text-lg font-bold mb-4">Breakdown by State</h3>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2">State</th>
-                      <th className="text-right py-2">Gallons</th>
-                      <th className="text-right py-2">Cost</th>
-                      <th className="text-right py-2">Miles</th>
-                      <th className="text-right py-2">Purchases</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.by_state.map((row) => (
-                      <tr key={row.state} className="border-b">
-                        <td className="py-2 font-semibold text-blue-600">{row.state}</td>
-                        <td className="py-2 text-right font-mono">
-                          {parseFloat(row.total_gallons).toFixed(2)}
-                        </td>
-                        <td className="py-2 text-right">{formatCurrency(row.total_cost)}</td>
-                        <td className="py-2 text-right">
-                          {row.total_miles ? parseFloat(row.total_miles).toFixed(1) : '-'}
-                        </td>
-                        <td className="py-2 text-right">{row.purchase_count}</td>
+                <h3 className="text-lg font-bold mb-4">State-by-State Breakdown</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="text-left py-3 px-3">State</th>
+                        <th className="text-right py-3 px-3">Miles</th>
+                        <th className="text-right py-3 px-3">Gallons</th>
+                        <th className="text-right py-3 px-3">Tax Rate</th>
+                        <th className="text-right py-3 px-3">Tax Paid</th>
+                        <th className="text-right py-3 px-3">Tax Owed</th>
+                        <th className="text-right py-3 px-3">Net Tax</th>
+                        <th className="text-center py-3 px-3">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {[...reportData.by_state]
+                        .sort((a, b) => b.net_tax - a.net_tax)
+                        .map((row) => (
+                        <tr key={row.state} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-3">
+                            <span className="font-semibold text-blue-600">{row.state}</span>
+                            {row.state_name && (
+                              <div className="text-xs text-gray-500">{row.state_name}</div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono">
+                            {row.miles_driven ? parseFloat(row.miles_driven).toLocaleString() : '-'}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono">
+                            {parseFloat(row.gallons_purchased || row.total_gallons).toFixed(2)}
+                          </td>
+                          <td className="py-3 px-3 text-right text-xs">
+                            ${row.tax_rate ? row.tax_rate.toFixed(4) : '0.0000'}
+                          </td>
+                          <td className="py-3 px-3 text-right font-semibold text-green-600">
+                            {formatCurrency(row.tax_paid || 0)}
+                          </td>
+                          <td className="py-3 px-3 text-right font-semibold text-blue-600">
+                            {formatCurrency(row.tax_owed || 0)}
+                          </td>
+                          <td className="py-3 px-3 text-right font-bold">
+                            <span className={row.net_tax > 0 ? 'text-red-600' : row.net_tax < 0 ? 'text-green-600' : 'text-gray-600'}>
+                              {formatCurrency(Math.abs(row.net_tax || 0))}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            {row.net_tax > 0 ? (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-semibold">DUE</span>
+                            ) : row.net_tax < 0 ? (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">CREDIT</span>
+                            ) : (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-semibold">EVEN</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 bg-gray-100 font-bold">
+                        <td className="py-3 px-3">TOTALS</td>
+                        <td className="py-3 px-3 text-right">
+                          {parseFloat(reportData.summary.total_miles || 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          {parseFloat(reportData.summary.total_gallons || 0).toFixed(2)}
+                        </td>
+                        <td className="py-3 px-3"></td>
+                        <td className="py-3 px-3 text-right text-green-600">
+                          {formatCurrency(reportData.summary.total_tax_paid)}
+                        </td>
+                        <td className="py-3 px-3 text-right text-blue-600">
+                          {formatCurrency(reportData.summary.total_tax_owed)}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <span className={reportData.summary.net_tax_due >= 0 ? 'text-red-600' : 'text-green-600'}>
+                            {formatCurrency(Math.abs(reportData.summary.net_tax_due))}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
 
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                <p className="text-sm text-blue-900">
+                  <strong>📋 How IFTA Works:</strong> Tax OWED is calculated based on miles driven in each state. Tax PAID is from fuel purchases.
+                  If you drive many miles in a state but buy little fuel there, you owe more tax. If you buy lots of fuel in a state but drive few miles, you get a credit.
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-between">
+                <button
+                  onClick={handleDownloadPDF}
+                  data-pdf-download
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Official IFTA PDF Report
+                </button>
                 <button
                   onClick={() => setShowReport(false)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                 >
                   Close
                 </button>

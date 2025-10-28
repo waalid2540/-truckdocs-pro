@@ -3,6 +3,7 @@ const multer = require('multer');
 const { query } = require('../config/database');
 const { authenticate, requireSubscription } = require('../middleware/auth');
 const { uploadToS3, getSignedUrl } = require('../utils/fileUpload');
+const { generateIFTAPDF } = require('../utils/iftaPdfGenerator');
 const Tesseract = require('tesseract.js');
 
 const router = express.Router();
@@ -356,41 +357,335 @@ router.post('/records', authenticate, requireSubscription, async (req, res) => {
     }
 });
 
-// GET /api/ifta/reports/:quarter - Get IFTA report for a quarter
+// GET /api/ifta/reports/:quarter - Get IFTA report for a quarter WITH TAX CALCULATIONS
 router.get('/reports/:quarter', authenticate, requireSubscription, async (req, res) => {
     try {
         const { quarter } = req.params; // Format: 2024-Q1
+        const { fuel_type = 'diesel' } = req.query; // Default to diesel
 
-        // Get all records for this quarter
+        // Get all records for this quarter with tax rates
         const records = await query(
-            `SELECT state, SUM(gallons) as total_gallons, SUM(cost) as total_cost,
-                    SUM(miles_in_state) as total_miles, COUNT(*) as purchase_count
+            `SELECT
+                ifta_records.state,
+                SUM(ifta_records.gallons) as total_gallons,
+                SUM(ifta_records.cost) as total_cost,
+                SUM(ifta_records.miles_in_state) as total_miles,
+                COUNT(*) as purchase_count,
+                ifta_tax_rates.tax_rate as state_tax_rate,
+                ifta_tax_rates.jurisdiction_name as state_name
              FROM ifta_records
-             WHERE user_id = $1 AND quarter = $2
-             GROUP BY state
-             ORDER BY state`,
-            [req.user.id, quarter]
+             LEFT JOIN ifta_tax_rates
+                ON ifta_records.state = ifta_tax_rates.jurisdiction
+                AND ifta_tax_rates.fuel_type = $3
+                AND ifta_tax_rates.is_active = true
+             WHERE ifta_records.user_id = $1 AND ifta_records.quarter = $2
+             GROUP BY ifta_records.state, ifta_tax_rates.tax_rate, ifta_tax_rates.jurisdiction_name
+             ORDER BY ifta_records.state`,
+            [req.user.id, quarter, fuel_type]
         );
 
         // Get overall summary
         const summary = await query(
-            `SELECT SUM(gallons) as total_gallons, SUM(cost) as total_cost,
-                    SUM(miles_in_state) as total_miles, COUNT(*) as total_purchases
+            `SELECT
+                SUM(gallons) as total_gallons,
+                SUM(cost) as total_cost,
+                SUM(miles_in_state) as total_miles,
+                COUNT(*) as total_purchases
              FROM ifta_records
              WHERE user_id = $1 AND quarter = $2`,
             [req.user.id, quarter]
         );
 
+        const summaryData = summary.rows[0];
+
+        // Calculate tax details for each state
+        const statesWithTax = records.rows.map(stateRecord => {
+            const taxRate = parseFloat(stateRecord.state_tax_rate) || 0;
+            const gallonsPurchased = parseFloat(stateRecord.total_gallons) || 0;
+            const milesInState = parseFloat(stateRecord.total_miles) || 0;
+            const totalMiles = parseFloat(summaryData.total_miles) || 1; // Avoid division by zero
+            const totalGallons = parseFloat(summaryData.total_gallons) || 0;
+
+            // Tax PAID = gallons purchased in state × tax rate
+            const taxPaid = gallonsPurchased * taxRate;
+
+            // Tax OWED = (miles in state ÷ total miles) × total gallons × state tax rate
+            // This represents your fair share of tax based on miles driven in each state
+            const taxableGallonsForState = totalMiles > 0
+                ? (milesInState / totalMiles) * totalGallons
+                : 0;
+            const taxOwed = taxableGallonsForState * taxRate;
+
+            // Net tax = tax owed - tax paid
+            // Positive = you owe more tax to this state
+            // Negative = you get a credit/refund from this state
+            const netTax = taxOwed - taxPaid;
+
+            return {
+                state: stateRecord.state,
+                state_name: stateRecord.state_name,
+                gallons_purchased: gallonsPurchased,
+                miles_driven: milesInState,
+                total_cost: parseFloat(stateRecord.total_cost) || 0,
+                purchase_count: parseInt(stateRecord.purchase_count),
+                tax_rate: taxRate,
+                tax_paid: parseFloat(taxPaid.toFixed(2)),
+                taxable_gallons: parseFloat(taxableGallonsForState.toFixed(2)),
+                tax_owed: parseFloat(taxOwed.toFixed(2)),
+                net_tax: parseFloat(netTax.toFixed(2))
+            };
+        });
+
+        // Calculate total tax owed/credit across all states
+        const totalTaxPaid = statesWithTax.reduce((sum, s) => sum + s.tax_paid, 0);
+        const totalTaxOwed = statesWithTax.reduce((sum, s) => sum + s.tax_owed, 0);
+        const totalNetTax = statesWithTax.reduce((sum, s) => sum + s.net_tax, 0);
+
         res.json({
             quarter,
-            summary: summary.rows[0],
-            by_state: records.rows
+            fuel_type,
+            summary: {
+                ...summaryData,
+                total_tax_paid: parseFloat(totalTaxPaid.toFixed(2)),
+                total_tax_owed: parseFloat(totalTaxOwed.toFixed(2)),
+                net_tax_due: parseFloat(totalNetTax.toFixed(2)), // Overall: owe or refund
+                average_mpg: summaryData.total_miles > 0
+                    ? parseFloat((summaryData.total_miles / summaryData.total_gallons).toFixed(2))
+                    : 0
+            },
+            by_state: statesWithTax,
+            warnings: generateIFTAWarnings(summaryData, statesWithTax)
         });
 
     } catch (error) {
         console.error('Get IFTA report error:', error);
         res.status(500).json({
             error: 'Failed to get IFTA report',
+            message: error.message
+        });
+    }
+});
+
+// Helper function to generate warnings and suggestions
+function generateIFTAWarnings(summary, states) {
+    const warnings = [];
+
+    // Check if mileage data is complete
+    const statesWithoutMiles = states.filter(s => !s.miles_driven || s.miles_driven === 0);
+    if (statesWithoutMiles.length > 0) {
+        warnings.push({
+            type: 'missing_mileage',
+            severity: 'high',
+            message: `Missing mileage data for ${statesWithoutMiles.length} state(s). Tax calculations may be inaccurate.`,
+            affected_states: statesWithoutMiles.map(s => s.state),
+            action: 'Please add miles driven for each state in your IFTA records.'
+        });
+    }
+
+    // Check for unrealistic MPG
+    const mpg = summary.total_miles && summary.total_gallons
+        ? summary.total_miles / summary.total_gallons
+        : 0;
+    if (mpg > 0 && mpg < 4) {
+        warnings.push({
+            type: 'low_mpg',
+            severity: 'medium',
+            message: `Your MPG (${mpg.toFixed(1)}) seems unusually low. This may indicate missing mileage data.`,
+            action: 'Review your mileage entries for accuracy.'
+        });
+    } else if (mpg > 12) {
+        warnings.push({
+            type: 'high_mpg',
+            severity: 'medium',
+            message: `Your MPG (${mpg.toFixed(1)}) seems unusually high for a commercial truck.`,
+            action: 'Double-check your mileage and fuel entries.'
+        });
+    }
+
+    // Check for high tax liability
+    const highTaxStates = states.filter(s => s.net_tax > 500);
+    if (highTaxStates.length > 0) {
+        warnings.push({
+            type: 'high_tax_liability',
+            severity: 'info',
+            message: `You have high tax liability in ${highTaxStates.length} state(s).`,
+            affected_states: highTaxStates.map(s => ({
+                state: s.state,
+                amount: s.net_tax
+            })),
+            action: 'Consider purchasing more fuel in these states to reduce your net tax liability.'
+        });
+    }
+
+    return warnings;
+}
+
+// POST /api/ifta/reports/:quarter/generate-pdf - Generate official IFTA PDF report
+router.post('/reports/:quarter/generate-pdf', authenticate, requireSubscription, async (req, res) => {
+    try {
+        const { quarter } = req.params;
+        const { fuel_type = 'diesel' } = req.body;
+
+        // 1. Get the complete IFTA report with tax calculations
+        const records = await query(
+            `SELECT
+                ifta_records.state,
+                SUM(ifta_records.gallons) as total_gallons,
+                SUM(ifta_records.cost) as total_cost,
+                SUM(ifta_records.miles_in_state) as total_miles,
+                COUNT(*) as purchase_count,
+                ifta_tax_rates.tax_rate as state_tax_rate,
+                ifta_tax_rates.jurisdiction_name as state_name
+             FROM ifta_records
+             LEFT JOIN ifta_tax_rates
+                ON ifta_records.state = ifta_tax_rates.jurisdiction
+                AND ifta_tax_rates.fuel_type = $3
+                AND ifta_tax_rates.is_active = true
+             WHERE ifta_records.user_id = $1 AND ifta_records.quarter = $2
+             GROUP BY ifta_records.state, ifta_tax_rates.tax_rate, ifta_tax_rates.jurisdiction_name
+             ORDER BY ifta_records.state`,
+            [req.user.id, quarter, fuel_type]
+        );
+
+        if (records.rows.length === 0) {
+            return res.status(404).json({
+                error: 'No IFTA records found for this quarter'
+            });
+        }
+
+        const summary = await query(
+            `SELECT
+                SUM(gallons) as total_gallons,
+                SUM(cost) as total_cost,
+                SUM(miles_in_state) as total_miles,
+                COUNT(*) as total_purchases
+             FROM ifta_records
+             WHERE user_id = $1 AND quarter = $2`,
+            [req.user.id, quarter]
+        );
+
+        const summaryData = summary.rows[0];
+
+        // Calculate tax details for each state (same logic as GET /reports/:quarter)
+        const statesWithTax = records.rows.map(stateRecord => {
+            const taxRate = parseFloat(stateRecord.state_tax_rate) || 0;
+            const gallonsPurchased = parseFloat(stateRecord.total_gallons) || 0;
+            const milesInState = parseFloat(stateRecord.total_miles) || 0;
+            const totalMiles = parseFloat(summaryData.total_miles) || 1;
+            const totalGallons = parseFloat(summaryData.total_gallons) || 0;
+
+            const taxPaid = gallonsPurchased * taxRate;
+            const taxableGallonsForState = totalMiles > 0
+                ? (milesInState / totalMiles) * totalGallons
+                : 0;
+            const taxOwed = taxableGallonsForState * taxRate;
+            const netTax = taxOwed - taxPaid;
+
+            return {
+                state: stateRecord.state,
+                state_name: stateRecord.state_name,
+                gallons_purchased: gallonsPurchased,
+                miles_driven: milesInState,
+                total_cost: parseFloat(stateRecord.total_cost) || 0,
+                purchase_count: parseInt(stateRecord.purchase_count),
+                tax_rate: taxRate,
+                tax_paid: parseFloat(taxPaid.toFixed(2)),
+                taxable_gallons: parseFloat(taxableGallonsForState.toFixed(2)),
+                tax_owed: parseFloat(taxOwed.toFixed(2)),
+                net_tax: parseFloat(netTax.toFixed(2))
+            };
+        });
+
+        const totalTaxPaid = statesWithTax.reduce((sum, s) => sum + s.tax_paid, 0);
+        const totalTaxOwed = statesWithTax.reduce((sum, s) => sum + s.tax_owed, 0);
+        const totalNetTax = statesWithTax.reduce((sum, s) => sum + s.net_tax, 0);
+
+        const reportData = {
+            quarter,
+            fuel_type,
+            summary: {
+                ...summaryData,
+                total_tax_paid: parseFloat(totalTaxPaid.toFixed(2)),
+                total_tax_owed: parseFloat(totalTaxOwed.toFixed(2)),
+                net_tax_due: parseFloat(totalNetTax.toFixed(2)),
+                average_mpg: summaryData.total_miles > 0
+                    ? parseFloat((summaryData.total_miles / summaryData.total_gallons).toFixed(2))
+                    : 0
+            },
+            by_state: statesWithTax,
+            warnings: generateIFTAWarnings(summaryData, statesWithTax)
+        };
+
+        // 2. Get user data
+        const userResult = await query(
+            'SELECT full_name, company_name, phone, mc_number, dot_number FROM users WHERE id = $1',
+            [req.user.id]
+        );
+
+        const userData = userResult.rows[0];
+
+        // 3. Generate PDF
+        console.log('Generating IFTA PDF report for quarter:', quarter);
+        const pdfUrl = await generateIFTAPDF(reportData, userData, req.user.id);
+
+        // 4. Check if report already exists in ifta_reports table
+        const [year, quarterNum] = quarter.split('-');
+        const existingReport = await query(
+            'SELECT id FROM ifta_reports WHERE user_id = $1 AND quarter = $2 AND year = $3',
+            [req.user.id, quarter, parseInt(year.substring(0, 4))]
+        );
+
+        if (existingReport.rows.length > 0) {
+            // Update existing report
+            await query(
+                `UPDATE ifta_reports
+                 SET report_pdf_url = $1, states_data = $2, total_gallons = $3,
+                     total_cost = $4, total_miles = $5, generated_at = CURRENT_TIMESTAMP
+                 WHERE id = $6`,
+                [
+                    pdfUrl,
+                    JSON.stringify({ summary: reportData.summary, by_state: reportData.by_state }),
+                    summaryData.total_gallons,
+                    summaryData.total_cost,
+                    summaryData.total_miles,
+                    existingReport.rows[0].id
+                ]
+            );
+        } else {
+            // Create new report
+            await query(
+                `INSERT INTO ifta_reports (
+                    user_id, quarter, year, total_gallons, total_cost, total_miles,
+                    report_pdf_url, states_data, status
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                [
+                    req.user.id,
+                    quarter,
+                    parseInt(year.substring(0, 4)),
+                    summaryData.total_gallons,
+                    summaryData.total_cost,
+                    summaryData.total_miles,
+                    pdfUrl,
+                    JSON.stringify({ summary: reportData.summary, by_state: reportData.by_state }),
+                    'draft'
+                ]
+            );
+        }
+
+        // 5. Generate signed URL for immediate download
+        const signedUrl = await getSignedUrl(pdfUrl);
+
+        res.json({
+            success: true,
+            message: 'IFTA PDF report generated successfully',
+            pdf_url: signedUrl,
+            report_data: reportData
+        });
+
+    } catch (error) {
+        console.error('Generate IFTA PDF error:', error);
+        res.status(500).json({
+            error: 'Failed to generate IFTA PDF report',
             message: error.message
         });
     }

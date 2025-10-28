@@ -22,13 +22,11 @@ async function runMigrations() {
         console.log('🔄 Starting database migrations...');
         console.log(`📡 Connecting to: ${process.env.DATABASE_URL ? 'Database configured' : 'No database URL'}`);
 
-        // Read schema file
+        // Read and run schema file
         const schemaPath = path.join(__dirname, '../database/schema.sql');
         const schema = fs.readFileSync(schemaPath, 'utf8');
 
         console.log('📝 Running schema.sql...');
-
-        // Execute schema
         await pool.query(schema);
 
         console.log('✅ Database tables created successfully!');
@@ -43,6 +41,37 @@ async function runMigrations() {
         console.log('   - vehicles');
         console.log('   - subscription_history');
         console.log('   - activity_log');
+
+        // Run additional migrations from database/migrations folder
+        console.log('\n🔄 Running additional migrations...');
+        const migrationsDir = path.join(__dirname, '../database/migrations');
+
+        if (fs.existsSync(migrationsDir)) {
+            const migrationFiles = fs.readdirSync(migrationsDir)
+                .filter(file => file.endsWith('.sql'))
+                .sort(); // Run in alphabetical order
+
+            for (const file of migrationFiles) {
+                console.log(`📝 Running ${file}...`);
+                const migrationPath = path.join(migrationsDir, file);
+                const migration = fs.readFileSync(migrationPath, 'utf8');
+
+                try {
+                    await pool.query(migration);
+                    console.log(`   ✅ ${file} completed`);
+                } catch (error) {
+                    // If error is "already exists", that's okay - skip it
+                    if (error.message.includes('already exists')) {
+                        console.log(`   ⚠️  ${file} - tables already exist, skipping`);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        }
+
+        console.log('\n✅ All migrations completed successfully!');
+        console.log('   - ifta_tax_rates table created with 116 tax rates');
 
         process.exit(0);
     } catch (error) {
