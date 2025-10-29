@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
-import { Fuel, Plus, Download, X, Trash2, Camera, FileText, Eye } from 'lucide-react'
+import { Fuel, Plus, Download, X, Trash2, Camera, FileText, Eye, Edit } from 'lucide-react'
 import axios from '../api/axios'
 
 const US_STATES = [
@@ -24,6 +24,7 @@ export default function IFTA() {
   })
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null) // Track which record is being edited
   const [showReport, setShowReport] = useState(false)
   const [reportData, setReportData] = useState(null)
   const [isScanning, setIsScanning] = useState(false)
@@ -67,13 +68,24 @@ export default function IFTA() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.post('/api/ifta/records', {
+      const payload = {
         ...formData,
         gallons: parseFloat(formData.gallons),
         cost: parseFloat(formData.cost),
         miles_in_state: formData.miles_in_state ? parseFloat(formData.miles_in_state) : null
-      })
+      }
+
+      if (editingRecord) {
+        // Update existing record
+        await axios.put(`/api/ifta/records/${editingRecord.id}`, payload)
+        alert('Record updated successfully!')
+      } else {
+        // Create new record
+        await axios.post('/api/ifta/records', payload)
+      }
+
       setShowModal(false)
+      setEditingRecord(null)
       setFormData({
         purchase_date: new Date().toISOString().split('T')[0],
         state: '',
@@ -86,9 +98,23 @@ export default function IFTA() {
       fetchRecords()
       fetchQuarterStats()
     } catch (error) {
-      console.error('Error creating record:', error)
-      alert('Failed to create fuel record')
+      console.error('Error saving record:', error)
+      alert(`Failed to ${editingRecord ? 'update' : 'create'} fuel record`)
     }
+  }
+
+  const handleEditRecord = (record) => {
+    setEditingRecord(record)
+    setFormData({
+      purchase_date: record.purchase_date.split('T')[0],
+      state: record.state,
+      gallons: record.gallons.toString(),
+      cost: record.cost.toString(),
+      vendor_name: record.vendor_name || '',
+      receipt_number: record.receipt_number || '',
+      miles_in_state: record.miles_in_state ? record.miles_in_state.toString() : ''
+    })
+    setShowModal(true)
   }
 
   const handleGenerateReport = async () => {
@@ -230,7 +256,19 @@ export default function IFTA() {
             <p className="text-gray-600 mt-2">Track fuel purchases and generate quarterly reports</p>
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingRecord(null)
+              setFormData({
+                purchase_date: new Date().toISOString().split('T')[0],
+                state: '',
+                gallons: '',
+                cost: '',
+                vendor_name: '',
+                receipt_number: '',
+                miles_in_state: ''
+              })
+              setShowModal(true)
+            }}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
@@ -328,6 +366,13 @@ export default function IFTA() {
                             <div className="w-6 h-6" title="No receipt"></div>
                           )}
                           <button
+                            onClick={() => handleEditRecord(record)}
+                            className="text-green-600 hover:text-green-800 p-1"
+                            title="Edit record"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteRecord(record.id)}
                             className="text-red-600 hover:text-red-800 p-1"
                             title="Delete record"
@@ -345,13 +390,18 @@ export default function IFTA() {
         </div>
       </div>
 
-      {/* Add Fuel Purchase Modal */}
+      {/* Add/Edit Fuel Purchase Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
-              <h2 className="text-2xl font-bold">Add Fuel Purchase</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">
+              <h2 className="text-2xl font-bold">
+                {editingRecord ? 'Edit Fuel Purchase' : 'Add Fuel Purchase'}
+              </h2>
+              <button onClick={() => {
+                setShowModal(false)
+                setEditingRecord(null)
+              }} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -492,7 +542,10 @@ export default function IFTA() {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false)
+                    setEditingRecord(null)
+                  }}
                   className="px-6 py-2 border rounded-lg hover:bg-gray-50"
                 >
                   Cancel
@@ -501,7 +554,7 @@ export default function IFTA() {
                   type="submit"
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  Add Record
+                  {editingRecord ? 'Update Record' : 'Add Record'}
                 </button>
               </div>
             </form>
