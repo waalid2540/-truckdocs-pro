@@ -98,6 +98,9 @@ app.use(cors({
     },
     credentials: true
 }));
+// Stripe webhook route MUST come before express.json() to get raw body
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }), require('./routes/stripe'));
+
 app.use(express.json({ limit: '50mb' })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -147,6 +150,8 @@ if (isProduction) {
     app.use('/api/user', require('./routes/user'));
     app.use('/api/admin', require('./routes/admin'));
     app.use('/api/document-alerts', require('./routes/document-alerts'));
+    // STRIPE PAYMENT ROUTES
+    app.use('/api/stripe', require('./routes/stripe'));
     // LOAD BOARD ROUTES
     app.use('/api/loads', require('./routes/loads'));
     app.use('/api/bookings', require('./routes/bookings'));

@@ -16,6 +16,7 @@ import Expenses from './pages/Expenses'
 import IFTA from './pages/IFTA'
 import Settings from './pages/Settings'
 import Pricing from './pages/Pricing'
+import Subscribe from './pages/Subscribe'
 // Load Board pages
 import LoadBoard from './pages/LoadBoard'
 import LoadBoardComingSoon from './pages/LoadBoardComingSoon'
@@ -52,6 +53,7 @@ function App() {
           <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
           <Route path="/ifta" element={<ProtectedRoute><IFTA /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/subscribe" element={<ProtectedRoute><Subscribe /></ProtectedRoute>} />
           {/* LOAD BOARD ROUTES */}
           <Route path="/load-board" element={<ProtectedRoute><LoadBoardComingSoon /></ProtectedRoute>} />
           <Route path="/post-load" element={<ProtectedRoute><LoadBoardComingSoon /></ProtectedRoute>} />

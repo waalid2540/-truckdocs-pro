@@ -7,7 +7,7 @@ export default function Pricing() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = () => {
     const token = localStorage.getItem('token')
 
     if (!token) {
@@ -16,29 +16,8 @@ export default function Pricing() {
       return
     }
 
-    setLoading(true)
-
-    try {
-      const response = await axios.post(
-        '/api/subscription/create-checkout',
-        {
-          tier: 'pro',
-          billing_period: 'monthly'
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      )
-
-      // Redirect to Stripe Checkout
-      window.location.href = response.data.checkout_url
-    } catch (error) {
-      console.error('Checkout error:', error)
-      alert('Failed to start checkout. Please try again.')
-      setLoading(false)
-    }
+    // Redirect to subscribe page (Stripe Checkout)
+    navigate('/subscribe')
   }
 
   return (
