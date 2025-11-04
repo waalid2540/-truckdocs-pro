@@ -18,6 +18,7 @@ import Settings from './pages/Settings'
 import Pricing from './pages/Pricing'
 // Load Board pages
 import LoadBoard from './pages/LoadBoard'
+import LoadBoardComingSoon from './pages/LoadBoardComingSoon'
 import PostLoad from './pages/PostLoad'
 import MyBookings from './pages/MyBookings'
 
@@ -52,9 +53,9 @@ function App() {
           <Route path="/ifta" element={<ProtectedRoute><IFTA /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           {/* LOAD BOARD ROUTES */}
-          <Route path="/load-board" element={<ProtectedRoute><LoadBoard /></ProtectedRoute>} />
-          <Route path="/post-load" element={<ProtectedRoute><PostLoad /></ProtectedRoute>} />
-          <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
+          <Route path="/load-board" element={<ProtectedRoute><LoadBoardComingSoon /></ProtectedRoute>} />
+          <Route path="/post-load" element={<ProtectedRoute><LoadBoardComingSoon /></ProtectedRoute>} />
+          <Route path="/my-bookings" element={<ProtectedRoute><LoadBoardComingSoon /></ProtectedRoute>} />
 
           {/* Catch-all route for 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
