@@ -216,6 +216,13 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     }
 });
 
+// Helper function: Safely convert Unix timestamp to Date
+function safeDate(timestamp) {
+    if (!timestamp || timestamp === null || timestamp === undefined) return null;
+    const date = new Date(timestamp * 1000);
+    return isNaN(date.getTime()) ? null : date;
+}
+
 // Helper function: Update subscription in database
 async function handleSubscriptionUpdate(subscription) {
     const userId = subscription.metadata.user_id;
@@ -244,10 +251,10 @@ async function handleSubscriptionUpdate(subscription) {
             subscription.id,
             subscription.customer,
             subscription.status,
-            new Date(subscription.current_period_start * 1000),
-            new Date(subscription.current_period_end * 1000),
-            subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-            subscription.cancel_at_period_end
+            safeDate(subscription.current_period_start),
+            safeDate(subscription.current_period_end),
+            safeDate(subscription.trial_end),
+            subscription.cancel_at_period_end || false
         ]
     );
 
