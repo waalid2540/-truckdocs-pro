@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList, ChevronDown, Menu, X } from 'lucide-react'
+import axios from '../api/axios'
+import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList, ChevronDown, Menu, X, Zap } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
 export default function Layout({ children }) {
@@ -9,6 +10,20 @@ export default function Layout({ children }) {
   const location = useLocation()
   const [openDropdown, setOpenDropdown] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [subscription, setSubscription] = useState(null)
+
+  useEffect(() => {
+    fetchSubscription()
+  }, [])
+
+  const fetchSubscription = async () => {
+    try {
+      const response = await axios.get('/api/stripe/subscription-status')
+      setSubscription(response.data)
+    } catch (error) {
+      console.error('Failed to fetch subscription:', error)
+    }
+  }
 
   const handleLogout = () => {
     logout()
@@ -90,6 +105,19 @@ export default function Layout({ children }) {
 
             {/* USER INFO - DESKTOP */}
             <div className="hidden lg:flex items-center gap-4">
+              {/* Show Subscribe Button if no subscription */}
+              {subscription && !subscription.hasSubscription && (
+                <>
+                  <Link
+                    to="/subscribe"
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-6 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 font-black shadow-xl text-white animate-pulse hover:animate-none"
+                  >
+                    <Zap className="w-5 h-5" />
+                    Start FREE Trial
+                  </Link>
+                  <div className="h-8 w-px bg-gray-300"></div>
+                </>
+              )}
               <NavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} />
               <div className="h-8 w-px bg-gray-300"></div>
               <div className="flex items-center gap-3">
@@ -152,6 +180,17 @@ export default function Layout({ children }) {
 
               {/* Settings & Logout */}
               <div className="border-t pt-2 mt-2">
+                {/* Mobile Subscribe Button */}
+                {subscription && !subscription.hasSubscription && (
+                  <Link
+                    to="/subscribe"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-4 rounded-lg mb-2 flex items-center justify-center gap-2 font-black shadow-lg"
+                  >
+                    <Zap className="w-5 h-5" />
+                    Start FREE Trial
+                  </Link>
+                )}
                 <MobileNavLink to="/settings" icon={Settings} label="Settings" active={isActive('/settings')} onClick={() => setMobileMenuOpen(false)} />
                 <button
                   onClick={() => { setMobileMenuOpen(false); handleLogout(); }}

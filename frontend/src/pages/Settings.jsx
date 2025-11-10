@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
+import axios from '../api/axios'
 import { User, CreditCard, Bell } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -108,8 +110,61 @@ function ProfileTab({ user }) {
 }
 
 function SubscriptionTab({ user }) {
-  const trialEndsDate = user?.trial_ends_at ? new Date(user.trial_ends_at) : null
+  const navigate = useNavigate()
+  const [subscription, setSubscription] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchSubscription()
+  }, [])
+
+  const fetchSubscription = async () => {
+    try {
+      const response = await axios.get('/api/stripe/subscription-status')
+      setSubscription(response.data)
+    } catch (error) {
+      console.error('Failed to fetch subscription:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubscribe = async () => {
+    try {
+      const response = await axios.post('/api/stripe/create-checkout-session')
+      if (response.data.url) {
+        window.location.href = response.data.url
+      }
+    } catch (error) {
+      console.error('Failed to create checkout session:', error)
+      alert('Failed to start subscription. Please try again.')
+    }
+  }
+
+  const handleManageBilling = async () => {
+    try {
+      const response = await axios.post('/api/stripe/create-portal-session')
+      if (response.data.url) {
+        window.location.href = response.data.url
+      }
+    } catch (error) {
+      console.error('Failed to create portal session:', error)
+      alert('Failed to open billing portal. Please try again.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading subscription...</p>
+      </div>
+    )
+  }
+
+  const trialEndsDate = subscription?.trialEnd ? new Date(subscription.trialEnd) : null
   const daysLeft = trialEndsDate ? Math.ceil((trialEndsDate - new Date()) / (1000 * 60 * 60 * 24)) : 7
+  const periodEndDate = subscription?.periodEnd ? new Date(subscription.periodEnd) : null
 
   return (
     <div className="space-y-6">
@@ -117,15 +172,15 @@ function SubscriptionTab({ user }) {
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-2xl font-bold text-blue-900">TruckDocs Pro</h3>
+            <h3 className="text-2xl font-bold text-blue-900">FreightHub Pro</h3>
             <p className="text-blue-700">$19.99/month</p>
           </div>
           <div className="bg-green-500 text-white px-4 py-2 rounded-full font-semibold">
-            {user?.subscription_status === 'trial' ? '7-Day Trial' : 'Active'}
+            {subscription?.status === 'trialing' ? '7-Day Trial' : subscription?.status === 'active' ? 'Active' : 'No Subscription'}
           </div>
         </div>
 
-        {user?.subscription_status === 'trial' && (
+        {subscription?.status === 'trialing' && (
           <div className="bg-white rounded-lg p-4 border-l-4 border-green-500">
             <p className="font-semibold text-gray-800">
               Your free trial ends in {daysLeft} days
@@ -136,11 +191,27 @@ function SubscriptionTab({ user }) {
           </div>
         )}
 
-        {user?.subscription_status === 'active' && (
+        {subscription?.status === 'active' && (
           <div className="bg-white rounded-lg p-4">
             <p className="font-semibold text-gray-800">Subscription Active</p>
             <p className="text-sm text-gray-600 mt-1">
-              Next billing date: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+              Next billing date: {periodEndDate?.toLocaleDateString()}
+            </p>
+            {subscription?.cancelAtPeriodEnd && (
+              <p className="text-sm text-orange-600 mt-2 font-semibold">
+                Your subscription will cancel on {periodEndDate?.toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        )}
+
+        {!subscription?.hasSubscription && (
+          <div className="bg-white rounded-lg p-4 border-l-4 border-orange-500">
+            <p className="font-semibold text-gray-800">
+              No active subscription
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              Start your 7-day free trial to access all features
             </p>
           </div>
         )}
@@ -173,28 +244,30 @@ function SubscriptionTab({ user }) {
 
       {/* Action Buttons */}
       <div className="flex gap-4">
-        {user?.subscription_status === 'trial' && (
-          <button className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold">
-            Subscribe Now - $19.99/month
+        {!subscription?.hasSubscription && (
+          <button
+            onClick={handleSubscribe}
+            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-lg hover:from-green-700 hover:to-emerald-700 font-bold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+          >
+            🚀 Start 7-Day FREE Trial
           </button>
         )}
-        {user?.subscription_status === 'active' && (
-          <>
-            <button className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700">
-              Manage Billing
-            </button>
-            <button className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700">
-              Cancel Subscription
-            </button>
-          </>
+        {subscription?.status === 'trialing' && (
+          <button
+            onClick={handleManageBilling}
+            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+          >
+            Manage Subscription
+          </button>
         )}
-      </div>
-
-      {/* Demo Mode Notice */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800">
-          <strong>Demo Mode:</strong> Stripe payment integration requires setup. Contact support for production deployment.
-        </p>
+        {subscription?.status === 'active' && (
+          <button
+            onClick={handleManageBilling}
+            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+          >
+            Manage Billing & Cancel
+          </button>
+        )}
       </div>
     </div>
   )

@@ -51,10 +51,11 @@ export default function Dashboard() {
 
   const fetchSubscription = async () => {
     try {
-      const response = await axios.get('/api/subscription/status')
-      setSubscription(response.data.subscription)
+      const response = await axios.get('/api/stripe/subscription-status')
+      setSubscription(response.data)
     } catch (error) {
       console.error('Failed to fetch subscription:', error)
+      setSubscription({ hasSubscription: false })
     }
   }
 
@@ -70,9 +71,9 @@ export default function Dashboard() {
 
   // Calculate trial days remaining
   const getTrialInfo = () => {
-    if (!subscription || subscription.subscription_status !== 'trialing') return null
+    if (!subscription || subscription.status !== 'trialing') return null
 
-    const trialEnd = new Date(subscription.trial_ends_at)
+    const trialEnd = new Date(subscription.trialEnd)
     const now = new Date()
     const daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
 
@@ -84,6 +85,9 @@ export default function Dashboard() {
 
   const trialInfo = getTrialInfo()
 
+  // Check if user needs to subscribe
+  const needsSubscription = subscription && !subscription.hasSubscription
+
   return (
     <Layout>
       <div className="p-12 bg-white min-h-screen">
@@ -92,6 +96,45 @@ export default function Dashboard() {
           <h1 className="text-5xl font-black text-gray-900 mb-3">Dashboard</h1>
           <p className="text-xl text-gray-600 font-semibold">Complete overview of your trucking business</p>
         </div>
+
+        {/* SUBSCRIBE NOW Banner - For users without subscription */}
+        {needsSubscription && (
+          <div className="mb-8 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-2xl p-8 text-white border-4 border-green-700">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1">
+                <h2 className="text-3xl font-black mb-2">🚀 Start Your 7-Day FREE Trial!</h2>
+                <p className="text-green-100 text-lg mb-4">
+                  Get instant access to IFTA calculator, AI assistant, receipt scanner, and all premium features.
+                </p>
+                <ul className="space-y-2 text-green-100">
+                  <li className="flex items-center gap-2">
+                    <span className="text-2xl">✅</span>
+                    <span className="font-semibold">7 days completely FREE - No charge until trial ends</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-2xl">✅</span>
+                    <span className="font-semibold">Save $500+/quarter on IFTA taxes</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-2xl">✅</span>
+                    <span className="font-semibold">Only $19.99/month after trial - Cancel anytime</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex-shrink-0">
+                <Link
+                  to="/subscribe"
+                  className="block bg-white text-green-600 px-10 py-5 rounded-xl font-black text-xl hover:bg-green-50 transition-all shadow-2xl hover:shadow-3xl transform hover:scale-105"
+                >
+                  Start Free Trial Now →
+                </Link>
+                <p className="text-center text-green-100 text-sm mt-3">
+                  No credit card charged for 7 days
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Trial Status Banner */}
         {trialInfo && (
