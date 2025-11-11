@@ -143,13 +143,20 @@ function SubscriptionTab({ user }) {
 
   const handleManageBilling = async () => {
     try {
+      setLoading(true)
       const response = await axios.post('/api/stripe/create-portal-session')
       if (response.data.url) {
+        // Redirect to Stripe Customer Portal
         window.location.href = response.data.url
+      } else {
+        alert('Failed to open billing portal. Please contact support.')
       }
     } catch (error) {
       console.error('Failed to create portal session:', error)
-      alert('Failed to open billing portal. Please try again.')
+      const errorMessage = error.response?.data?.message || error.message
+      alert(`Error: ${errorMessage}\n\nPlease contact support if this continues.`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -243,30 +250,42 @@ function SubscriptionTab({ user }) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-4">
+      <div className="space-y-4">
         {!subscription?.hasSubscription && (
           <button
             onClick={handleSubscribe}
-            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-lg hover:from-green-700 hover:to-emerald-700 font-bold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-lg hover:from-green-700 hover:to-emerald-700 font-bold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
           >
             🚀 Start 7-Day FREE Trial
           </button>
         )}
-        {subscription?.status === 'trialing' && (
-          <button
-            onClick={handleManageBilling}
-            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
-          >
-            Manage Subscription
-          </button>
-        )}
-        {subscription?.status === 'active' && (
-          <button
-            onClick={handleManageBilling}
-            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold"
-          >
-            Manage Billing & Cancel
-          </button>
+
+        {(subscription?.status === 'trialing' || subscription?.status === 'active') && (
+          <div className="space-y-3">
+            <button
+              onClick={handleManageBilling}
+              className="w-full bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+            >
+              <CreditCard className="w-5 h-5" />
+              Manage Billing & Payment Method
+            </button>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="font-bold text-gray-800 mb-2">Need to cancel?</h4>
+              <p className="text-sm text-gray-600 mb-3">
+                Click "Manage Billing" above to access Stripe Customer Portal where you can:
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1 mb-3">
+                <li>• Cancel your subscription</li>
+                <li>• Update payment method</li>
+                <li>• View invoices & receipts</li>
+                <li>• Download payment history</li>
+              </ul>
+              <p className="text-xs text-gray-500 italic">
+                If you cancel, you'll keep access until the end of your billing period.
+              </p>
+            </div>
+          </div>
         )}
       </div>
     </div>
