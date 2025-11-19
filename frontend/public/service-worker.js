@@ -1,4 +1,4 @@
-const CACHE_NAME = 'freighthub-pro-v1';
+const CACHE_NAME = 'freighthub-pro-v2';
 const urlsToCache = [
   '/',
   '/index.html',
