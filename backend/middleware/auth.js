@@ -56,19 +56,55 @@ const authenticate = async (req, res, next) => {
     }
 };
 
-// Middleware to check if user has active subscription
-const requireSubscription = (req, res, next) => {
-    const { subscription_status } = req.user;
+// Middleware to check if user has active subscription or valid trial
+const requireSubscription = async (req, res, next) => {
+    try {
+        const { subscription_status } = req.user;
 
-    if (subscription_status !== 'active' && subscription_status !== 'trial') {
+        // If user has active paid subscription, allow access
+        if (subscription_status === 'active' || subscription_status === 'trialing') {
+            return next();
+        }
+
+        // If user is on trial, check if trial has expired
+        if (subscription_status === 'trial') {
+            // Get trial_ends_at from database
+            const result = await query(
+                'SELECT trial_ends_at FROM users WHERE id = $1',
+                [req.user.id]
+            );
+
+            const trialEndsAt = result.rows[0]?.trial_ends_at;
+
+            // Check if trial has expired
+            if (trialEndsAt && new Date(trialEndsAt) < new Date()) {
+                return res.status(402).json({
+                    error: 'Trial expired',
+                    message: 'Your 7-day free trial has ended. Please upgrade to continue using TruckDocs Pro.',
+                    trial_ended: true,
+                    upgrade_required: true
+                });
+            }
+
+            // Trial is still active
+            return next();
+        }
+
+        // User has no valid subscription (cancelled, expired, etc.)
         return res.status(403).json({
-            error: 'Forbidden',
-            message: 'Active subscription required',
-            subscription_status
+            error: 'Subscription required',
+            message: 'Active subscription required to access this feature',
+            subscription_status,
+            upgrade_required: true
+        });
+
+    } catch (error) {
+        console.error('Subscription check error:', error);
+        return res.status(500).json({
+            error: 'Server error',
+            message: 'Failed to verify subscription'
         });
     }
-
-    next();
 };
 
 // Middleware to check subscription tier

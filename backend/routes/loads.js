@@ -80,7 +80,7 @@ router.post('/', authenticate, requireSubscription, async (req, res) => {
 });
 
 // GET /api/loads/search - Search available loads
-router.get('/search', authenticate, async (req, res) => {
+router.get('/search', authenticate, requireSubscription, async (req, res) => {
     try {
         const {
             origin_state, origin_city, origin_radius = 50,
@@ -206,7 +206,7 @@ router.get('/search', authenticate, async (req, res) => {
 });
 
 // GET /api/loads/:id - Get single load details
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, requireSubscription, async (req, res) => {
     try {
         const result = await query(
             `SELECT l.*, bp.company_name as broker_company_name,
