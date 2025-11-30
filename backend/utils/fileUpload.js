@@ -89,9 +89,11 @@ const deleteFromS3 = async (fileUrl) => {
 /**
  * Get signed URL for private file access (valid for 1 hour)
  * @param {String} fileUrl - Full S3 URL
+ * @param {String} filename - Optional filename for download
+ * @param {Boolean} forceDownload - Force download instead of opening in browser
  * @returns {String} - Signed URL
  */
-const getSignedUrl = async (fileUrl) => {
+const getSignedUrl = async (fileUrl, filename = null, forceDownload = false) => {
     try {
         const url = new URL(fileUrl);
         const key = url.pathname.substring(1);
@@ -101,6 +103,11 @@ const getSignedUrl = async (fileUrl) => {
             Key: key,
             Expires: 3600 // URL valid for 1 hour
         };
+
+        // Force download with proper filename
+        if (forceDownload && filename) {
+            params.ResponseContentDisposition = `attachment; filename="${filename}"`;
+        }
 
         return s3.getSignedUrl('getObject', params);
 
