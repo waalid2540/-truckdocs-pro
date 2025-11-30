@@ -15,8 +15,8 @@ ADD COLUMN IF NOT EXISTS refresh_token_expires_at TIMESTAMP;
 
 -- Create security audit log table
 CREATE TABLE IF NOT EXISTS security_audit_log (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     event_type VARCHAR(50) NOT NULL, -- 'login_success', 'login_failed', 'account_locked', 'password_reset', etc.
     ip_address VARCHAR(45),
     user_agent TEXT,
@@ -31,11 +31,11 @@ CREATE INDEX IF NOT EXISTS idx_security_audit_created_at ON security_audit_log(c
 
 -- Create financial audit trail table
 CREATE TABLE IF NOT EXISTS financial_audit_trail (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     transaction_type VARCHAR(50) NOT NULL, -- 'invoice_created', 'invoice_paid', 'booking_created', 'expense_added', etc.
     entity_type VARCHAR(50) NOT NULL, -- 'invoice', 'booking', 'expense', etc.
-    entity_id INTEGER NOT NULL,
+    entity_id UUID NOT NULL,
     amount DECIMAL(10, 2),
     details JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
