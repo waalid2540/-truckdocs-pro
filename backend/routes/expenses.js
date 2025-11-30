@@ -93,6 +93,42 @@ router.post('/', authenticate, requireSubscription, async (req, res) => {
     }
 });
 
+// DELETE /api/expenses/:id - Delete expense
+router.delete('/:id', authenticate, requireSubscription, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if expense exists and belongs to user
+        const checkResult = await query(
+            'SELECT id FROM expenses WHERE id = $1 AND user_id = $2',
+            [id, req.user.id]
+        );
+
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({
+                error: 'Expense not found'
+            });
+        }
+
+        // Delete expense
+        await query(
+            'DELETE FROM expenses WHERE id = $1 AND user_id = $2',
+            [id, req.user.id]
+        );
+
+        res.json({
+            message: 'Expense deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Delete expense error:', error);
+        res.status(500).json({
+            error: 'Failed to delete expense',
+            message: error.message
+        });
+    }
+});
+
 // GET /api/expenses/stats/summary - Get expense statistics
 router.get('/stats/summary', authenticate, requireSubscription, async (req, res) => {
     try {
