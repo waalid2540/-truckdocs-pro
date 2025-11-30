@@ -66,8 +66,50 @@ const TrialBanner = ({ user }) => {
 
   return (
     <div className={`${trialInfo.bgColor} text-white shadow-lg relative`}>
-      <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between flex-wrap">
+      <div className="max-w-7xl mx-auto px-3 py-3 sm:px-6 lg:px-8">
+        {/* Mobile Layout - Stacked */}
+        <div className="block sm:hidden">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start flex-1 mr-2">
+              <span className="flex p-1.5 rounded-lg bg-white bg-opacity-20 flex-shrink-0">
+                {trialInfo.urgent ? (
+                  <Clock className="h-4 w-4" />
+                ) : (
+                  <CreditCard className="h-4 w-4" />
+                )}
+              </span>
+              <div className="ml-2 flex-1 min-w-0">
+                <p className="font-bold text-xs leading-tight">
+                  {trialInfo.title}
+                </p>
+                <p className="text-xs opacity-90 mt-1 leading-snug">
+                  {trialInfo.message}
+                </p>
+              </div>
+            </div>
+
+            {!trialInfo.urgent && (
+              <button
+                onClick={() => setShowBanner(false)}
+                className="text-white hover:text-gray-200 transition flex-shrink-0 p-1"
+                aria-label="Dismiss banner"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate('/pricing')}
+            className="w-full bg-white text-gray-900 px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-100 transition flex items-center justify-center space-x-2 shadow-md"
+          >
+            <CreditCard className="h-4 w-4" />
+            <span>Upgrade Now - $19.99/mo</span>
+          </button>
+        </div>
+
+        {/* Desktop Layout - Horizontal */}
+        <div className="hidden sm:flex items-center justify-between">
           <div className="flex items-center flex-1">
             <span className="flex p-2 rounded-lg bg-white bg-opacity-20">
               {trialInfo.urgent ? (
@@ -77,19 +119,19 @@ const TrialBanner = ({ user }) => {
               )}
             </span>
             <div className="ml-3 flex-1">
-              <p className="font-semibold text-sm sm:text-base">
+              <p className="font-semibold text-base">
                 {trialInfo.title}
               </p>
-              <p className="text-xs sm:text-sm opacity-90 mt-0.5">
+              <p className="text-sm opacity-90 mt-0.5">
                 {trialInfo.message}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 mt-3 sm:mt-0">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => navigate('/pricing')}
-              className="bg-white text-gray-900 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-100 transition flex items-center space-x-2 shadow-md"
+              className="bg-white text-gray-900 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-100 transition flex items-center space-x-2 shadow-md whitespace-nowrap"
             >
               <CreditCard className="h-4 w-4" />
               <span>Upgrade Now</span>
