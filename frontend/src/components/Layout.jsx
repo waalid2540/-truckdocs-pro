@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import axios from '../api/axios'
 import { Truck, FileText, DollarSign, Receipt, Fuel, Settings, LogOut, LayoutDashboard, Sparkles, Scan, PenTool, Package, PlusSquare, ClipboardList, ChevronDown, Menu, X, Zap } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
+import TrialBanner from './TrialBanner'
+import UpgradeModal from './UpgradeModal'
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
@@ -11,9 +13,22 @@ export default function Layout({ children }) {
   const [openDropdown, setOpenDropdown] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [subscription, setSubscription] = useState(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeMessage, setUpgradeMessage] = useState('')
 
   useEffect(() => {
     fetchSubscription()
+
+    // Listen for trial expired events
+    const handleTrialExpired = (event) => {
+      setUpgradeMessage(event.detail.message)
+      setShowUpgradeModal(true)
+    }
+
+    window.addEventListener('trialExpired', handleTrialExpired)
+    return () => {
+      window.removeEventListener('trialExpired', handleTrialExpired)
+    }
   }, [])
 
   const fetchSubscription = async () => {
@@ -210,6 +225,16 @@ export default function Layout({ children }) {
           </div>
         )}
       </header>
+
+      {/* Trial Banner - Shows days remaining */}
+      <TrialBanner user={user} />
+
+      {/* Upgrade Modal - Shows when trial expires */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
 
       {/* Main Content - FULL WIDTH */}
       <div className="overflow-y-auto">

@@ -29,7 +29,7 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-// Handle 401 errors (unauthorized)
+// Handle errors (401 unauthorized, 402 payment required)
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -38,6 +38,14 @@ axiosInstance.interceptors.response.use(
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
+    } else if (error.response?.status === 402) {
+      // Trial expired - trigger upgrade modal
+      const event = new CustomEvent('trialExpired', {
+        detail: {
+          message: error.response?.data?.message || 'Your trial has ended. Please upgrade to continue.'
+        }
+      })
+      window.dispatchEvent(event)
     }
     return Promise.reject(error)
   }
